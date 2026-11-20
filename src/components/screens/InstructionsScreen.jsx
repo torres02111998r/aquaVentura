@@ -91,7 +91,7 @@ export default function InstructionsScreen() {
         <button
           type="button"
           className="cursor-pointer rounded-full bg-av-yellow px-[clamp(20px,4vw,32px)] py-[clamp(10px,1.6vh,14px)] font-body text-[clamp(0.78rem,1.9vw,0.92rem)] font-bold tracking-[0.04em] text-av-blue-deep shadow-[0_8px_20px_rgba(0,20,60,0.3)] transition-[transform,box-shadow,filter] duration-150 hover:-translate-y-0.5 hover:brightness-[1.05] focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-white active:translate-y-px motion-reduce:transition-none"
-          onClick={() => setScreen('LEVEL_SELECT')}
+          onClick={() => setScreen('CAST')}
         >
           CONTINUAR →
         </button>

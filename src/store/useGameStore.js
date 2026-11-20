@@ -10,9 +10,11 @@ export const SCREENS = [
   'HOME',
   'INTRO',
   'INSTRUCTIONS',
-  'LEVEL_SELECT',
+  'CAST',
+  'MAP',
+  'BRIEFING',
   'PLAYING',
-  'VICTORY',
+  'LEVEL_SUMMARY',
   'GAME_OVER',
 ];
 
@@ -33,6 +35,29 @@ const initialProgress = {
   reto7Dias: [],
 };
 
+/**
+ * Level 1 opening state, straight from the GDD data dictionary:
+ * tanque 560 L, fuga total 80 L/day, 3 detector charges.
+ * This is match state: it is never persisted.
+ */
+export const LEVEL_1_STATE = {
+  tanque: 560,
+  factura: 45000,
+  caudalRio: 50,
+  perdidaDiaria: 80,
+  cargasDetector: 3,
+  piezasKit: { empaque: 2, flotador: 2, cinta: 2, abrazadera: 1 },
+  estimacionJugador: 50,
+  missionText: 'Encuentra por qué la aguja no se detiene',
+  tatoMessage: '',
+  detectorActive: false,
+};
+
+const cloneLevelState = () => ({
+  ...LEVEL_1_STATE,
+  piezasKit: { ...LEVEL_1_STATE.piezasKit },
+});
+
 const clampLevel = (nivel) => Math.min(Math.max(Math.trunc(nivel), 1), TOTAL_LEVELS);
 
 export const useGameStore = create(
@@ -49,7 +74,26 @@ export const useGameStore = create(
         set({ currentScreen: screen });
       },
 
+      /** Inspector identity, captured in the cast screen. */
+      inspectorName: '',
+      setInspectorName: (name) => set({ inspectorName: String(name ?? '').trim() }),
+
       ...initialProgress,
+
+      ...cloneLevelState(),
+
+      /** Merges a partial update into the level state. */
+      patchGame: (partial) => set(partial),
+
+      /** Slider value from the briefing screen, 0 to 200 L/day. */
+      setEstimacionJugador: (litros) => {
+        const valor = Number(litros);
+        if (!Number.isFinite(valor)) return;
+        set({ estimacionJugador: Math.min(Math.max(Math.round(valor), 0), 200) });
+      },
+
+      /** Restores the level 1 opening state (used on retry). */
+      resetLevel: () => set(cloneLevelState()),
 
       /** Opens a level (1-based) so it can be picked from the level map. */
       unlockLevel: (nivel) => {
@@ -86,15 +130,20 @@ export const useGameStore = create(
       },
 
       /** Clears persisted progress but keeps the current screen. */
-      resetProgress: () => set({ ...initialProgress, estrellasPorNivel: [...initialProgress.estrellasPorNivel], nivelesAbiertos: [...initialProgress.nivelesAbiertos] }),
+      resetProgress: () =>
+        set({
+          ...initialProgress,
+          estrellasPorNivel: [...initialProgress.estrellasPorNivel],
+          nivelesAbiertos: [...initialProgress.nivelesAbiertos],
+        }),
     }),
     {
       name: 'aquaventura-progress',
       version: 1,
       /**
        * Only aggregated progress is persisted. The in-progress match state
-       * (tanque, factura, caudalRio, horaSimulada, cargasDetector, piezasKit,
-       * objetos, tareas) lives outside persistence on purpose.
+       * (tanque, factura, caudalRio, perdidaDiaria, cargasDetector, piezasKit,
+       * estimacionJugador, missionText) lives outside persistence on purpose.
        */
       partialize: (state) => ({
         nivelesAbiertos: state.nivelesAbiertos,
