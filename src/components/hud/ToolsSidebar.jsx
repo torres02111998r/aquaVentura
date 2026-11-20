@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { PaintBucket, Radar, Radio, Timer, Wrench, X } from 'lucide-react';
+import { EventBus } from '../../game/EventBus';
 import { useGameStore } from '../../store/useGameStore';
 
 const DEFAULT_TATO_MESSAGE = 'Tato: la aguja sigue girando. Algo se escapa.';
 
-function ToolSlot({ icon: Icon, label, count, muted = false }) {
-  return (
-    <div
-      className={`flex w-full flex-col items-center gap-1 ${muted ? 'opacity-70' : ''}`}
-    >
+function ToolSlot({ icon: Icon, label, count, muted = false, onClick }) {
+  const content = (
+    <>
       <span className="relative grid size-11 place-items-center rounded-xl bg-white/12 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]">
         <Icon className="size-5" aria-hidden="true" />
         {count !== undefined && (
@@ -20,9 +19,28 @@ function ToolSlot({ icon: Icon, label, count, muted = false }) {
       <span className="text-center font-body text-[0.55rem] font-semibold tracking-[0.08em] text-white/85 uppercase">
         {label}
       </span>
-    </div>
+    </>
   );
+
+  const baseClass = `flex w-full flex-col items-center gap-1 ${muted ? 'opacity-70' : ''}`;
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={`${baseClass} cursor-pointer rounded-xl px-1 py-1 transition-colors hover:bg-white/10 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow`}
+        onClick={onClick}
+        aria-label={`Usar ${label}`}
+        title={`Usar ${label}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={baseClass}>{content}</div>;
 }
+
 
 export default function ToolsSidebar() {
   const cargasDetector = useGameStore((state) => state.cargasDetector);
@@ -31,6 +49,7 @@ export default function ToolsSidebar() {
   const [tatoOpen, setTatoOpen] = useState(false);
 
   const totalPiezas = Object.values(piezasKit).reduce((total, n) => total + n, 0);
+  const requestDetector = () => EventBus.emit('game:detector-request');
 
   return (
     <aside className="relative flex w-[5.25rem] shrink-0 flex-col items-center gap-3 bg-[#0E76A8] px-2 py-3 text-white shadow-[-6px_0_18px_rgba(0,20,60,0.25)]">
@@ -38,7 +57,7 @@ export default function ToolsSidebar() {
         Herramientas
       </p>
 
-      <ToolSlot icon={Radar} label="Detector" count={cargasDetector} />
+      <ToolSlot icon={Radar} label="Detector" count={cargasDetector} onClick={requestDetector} />
       <ToolSlot icon={Wrench} label="Kit" count={totalPiezas} />
       <ToolSlot icon={PaintBucket} label="Cubeta" muted />
       <ToolSlot icon={Timer} label="Temporizador" muted />

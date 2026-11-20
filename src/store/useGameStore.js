@@ -47,6 +47,8 @@ export const LEVEL_1_STATE = {
   perdidaDiaria: 80,
   cargasDetector: 3,
   piezasKit: { empaque: 2, flotador: 2, cinta: 2, abrazadera: 1 },
+  /** Pieces wasted on wrong repairs. Blocks the third star. */
+  piezasPerdidas: 0,
   estimacionJugador: 50,
   missionText: 'Encuentra por qué la aguja no se detiene',
   tatoMessage: '',
@@ -94,6 +96,31 @@ export const useGameStore = create(
 
       /** Restores the level 1 opening state (used on retry). */
       resetLevel: () => set(cloneLevelState()),
+
+      /**
+       * Prepares a fresh run but keeps the estimation the player just chose in
+       * the briefing screen.
+       */
+      startLevel: () =>
+        set((state) => ({
+          ...cloneLevelState(),
+          estimacionJugador: state.estimacionJugador,
+        })),
+
+      /**
+       * Removes one piece from the kit. `wrong` marks it as wasted, which is what
+       * costs the third star.
+       */
+      consumePiece: (pieceId, wrong = false) => {
+        const piezasKit = { ...get().piezasKit };
+        if ((piezasKit[pieceId] ?? 0) <= 0) return false;
+        piezasKit[pieceId] -= 1;
+        set({
+          piezasKit,
+          piezasPerdidas: get().piezasPerdidas + (wrong ? 1 : 0),
+        });
+        return true;
+      },
 
       /** Opens a level (1-based) so it can be picked from the level map. */
       unlockLevel: (nivel) => {

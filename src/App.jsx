@@ -4,36 +4,10 @@ import CastScreen from './components/screens/CastScreen';
 import HomeScreen from './components/screens/HomeScreen';
 import InstructionsScreen from './components/screens/InstructionsScreen';
 import IntroScreen from './components/screens/IntroScreen';
+import LevelSummaryScreen from './components/screens/LevelSummaryScreen';
 import MapScreen from './components/screens/MapScreen';
+import PhaserGame from './game/PhaserGame';
 import { useGameStore } from './store/useGameStore';
-
-/**
- * Temporary canvas slot: the Phaser scene for level 1 will mount here.
- * It already sits inside the persistent HUD frame.
- */
-function PlayingPlaceholder() {
-  const setScreen = useGameStore((state) => state.setScreen);
-
-  return (
-    <GameFrame>
-      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[#0b2a4a] px-6 text-center text-white/80">
-        <p className="m-0 font-display text-[0.7rem] tracking-[0.28em] uppercase">
-          Escena Phaser
-        </p>
-        <p className="m-0 max-w-[38ch] font-body text-xs leading-relaxed">
-          Aquí se montará el canvas 2D del Nivel 1: la casa Ortiz en corte lateral.
-        </p>
-        <button
-          type="button"
-          className="mt-2 cursor-pointer rounded-full bg-av-yellow px-5 py-2 font-body text-[0.72rem] font-bold tracking-[0.06em] text-[#1557B0] transition-[transform,filter] duration-150 hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-white active:translate-y-px motion-reduce:transition-none"
-          onClick={() => setScreen('MAP')}
-        >
-          Salir al mapa
-        </button>
-      </div>
-    </GameFrame>
-  );
-}
 
 /** Temporary fallback for screens that are not implemented yet. */
 function UnimplementedScreen({ screen }) {
@@ -75,7 +49,13 @@ export default function App() {
     case 'BRIEFING':
       return <BriefingScreen />;
     case 'PLAYING':
-      return <PlayingPlaceholder />;
+      return (
+        <GameFrame>
+          <PhaserGame />
+        </GameFrame>
+      );
+    case 'LEVEL_SUMMARY':
+      return <LevelSummaryScreen />;
     default:
       return <UnimplementedScreen screen={currentScreen} />;
   }

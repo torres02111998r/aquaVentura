@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Home, House, Lock, Star, Waves } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
 
@@ -72,6 +73,16 @@ export default function MapScreen() {
   const estrellasPorNivel = useGameStore((state) => state.estrellasPorNivel);
   const caudalRio = useGameStore((state) => state.caudalRio);
   const setScreen = useGameStore((state) => state.setScreen);
+  const [notice, setNotice] = useState('');
+
+  const playLevel = (id) => {
+    if (id === 1) {
+      setScreen('BRIEFING');
+      return;
+    }
+    setNotice(`El Nivel ${id} todavía está en construcción.`);
+    window.setTimeout(() => setNotice(''), 2600);
+  };
 
   return (
     <main className="flex h-svh flex-col overflow-hidden bg-[linear-gradient(180deg,#7FB2F5_0%,#619BF2_55%,#5B93EE_100%)]">
@@ -96,6 +107,12 @@ export default function MapScreen() {
         </div>
       </header>
 
+      {notice && (
+        <p className="mx-auto mt-2 mb-0 rounded-full bg-white/90 px-4 py-1 font-body text-[0.7rem] font-semibold text-av-blue-deep shadow">
+          {notice}
+        </p>
+      )}
+
       <section className="flex min-h-0 flex-1 flex-col justify-between gap-2 px-[clamp(12px,3vw,32px)] py-3">
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           {LEVELS.map((level, index) => (
@@ -104,7 +121,7 @@ export default function MapScreen() {
               level={level}
               unlocked={Boolean(nivelesAbiertos[index])}
               stars={estrellasPorNivel[index] ?? 0}
-              onPlay={() => level.id === 1 && setScreen('BRIEFING')}
+              onPlay={() => playLevel(level.id)}
             />
           ))}
         </div>

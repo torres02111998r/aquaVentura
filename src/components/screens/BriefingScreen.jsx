@@ -8,6 +8,7 @@ const MAX_LITROS = 200;
 export default function BriefingScreen() {
   const estimacionJugador = useGameStore((state) => state.estimacionJugador);
   const setEstimacionJugador = useGameStore((state) => state.setEstimacionJugador);
+  const startLevel = useGameStore((state) => state.startLevel);
   const setScreen = useGameStore((state) => state.setScreen);
 
   return (
@@ -97,7 +98,10 @@ export default function BriefingScreen() {
         <button
           type="button"
           className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-av-yellow px-[clamp(18px,3.5vw,28px)] py-[clamp(10px,1.6vh,14px)] font-body text-[clamp(0.75rem,1.8vw,0.9rem)] font-bold tracking-[0.04em] text-[#1557B0] shadow-[0_8px_20px_rgba(0,20,60,0.3)] transition-[transform,filter] duration-150 hover:-translate-y-0.5 hover:brightness-105 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-white active:translate-y-px motion-reduce:transition-none"
-          onClick={() => setScreen('PLAYING')}
+          onClick={() => {
+            startLevel();
+            setScreen('PLAYING');
+          }}
         >
           EMPEZAR INSPECCIÓN
           <ArrowRight className="size-4" aria-hidden="true" />
