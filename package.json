@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "phaser": "^4.2.1",
+    "lucide-react": "^1.76.0",
+    "phaser": "^3.90.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
