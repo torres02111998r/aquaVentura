@@ -10,10 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.5",
     "lucide-react": "^1.76.0",
     "phaser": "^3.90.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "tailwindcss": "^4.3.5",
     "zustand": "^5.1.0"
   },
   "devDependencies": {
