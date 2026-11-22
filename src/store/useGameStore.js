@@ -76,6 +76,12 @@ export const useGameStore = create(
         set({ currentScreen: screen });
       },
 
+      nivelActual: 1,
+
+      setNivelActual: (nivel) => {
+        set({ nivelActual: clampLevel(nivel) });
+      },
+
       /** Inspector identity, captured in the cast screen. */
       inspectorName: '',
       setInspectorName: (name) => set({ inspectorName: String(name ?? '').trim() }),

@@ -38,16 +38,14 @@ function LevelHouse({ level, unlocked, stars, onPlay }) {
         type="button"
         disabled={!unlocked}
         onClick={onPlay}
-        className={`flex flex-1 flex-col items-center gap-1 rounded-b-xl bg-[#F7EAD6] px-2 py-2 text-center shadow-[0_8px_18px_rgba(0,20,60,0.22)] transition-transform duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow ${
-          unlocked
+        className={`flex flex-1 flex-col items-center gap-1 rounded-b-xl bg-[#F7EAD6] px-2 py-2 text-center shadow-[0_8px_18px_rgba(0,20,60,0.22)] transition-transform duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow ${unlocked
             ? 'cursor-pointer hover:-translate-y-0.5'
             : 'cursor-not-allowed opacity-80'
-        }`}
+          }`}
       >
         <span
-          className={`grid size-8 place-items-center rounded-full ${
-            unlocked ? 'bg-av-blue/20 text-av-blue-deep' : 'bg-[#5A3B22]/10 text-[#5A3B22]/60'
-          }`}
+          className={`grid size-8 place-items-center rounded-full ${unlocked ? 'bg-av-blue/20 text-av-blue-deep' : 'bg-[#5A3B22]/10 text-[#5A3B22]/60'
+            }`}
         >
           {unlocked ? (
             <House className="size-4" aria-hidden="true" />
@@ -73,17 +71,24 @@ export default function MapScreen() {
   const estrellasPorNivel = useGameStore((state) => state.estrellasPorNivel);
   const caudalRio = useGameStore((state) => state.caudalRio);
   const setScreen = useGameStore((state) => state.setScreen);
+  const setNivelActual = useGameStore((state) => state.setNivelActual);
   const [notice, setNotice] = useState('');
 
   const playLevel = (id) => {
+    setNivelActual(id);
+
     if (id === 1) {
       setScreen('BRIEFING');
       return;
     }
-    setNotice(`El Nivel ${id} todavía está en construcción.`);
-    window.setTimeout(() => setNotice(''), 2600);
-  };
 
+    if (id === 2) {
+      setScreen('PLAYING');
+      return;
+    }
+
+    setNotice(`El nivel ${id} todavía está en construcción.`);
+  };
   return (
     <main className="flex h-svh flex-col overflow-hidden bg-[linear-gradient(180deg,#7FB2F5_0%,#619BF2_55%,#5B93EE_100%)]">
       <header className="relative flex shrink-0 items-center justify-center bg-av-blue-deep px-3 py-2.5 shadow-[0_8px_24px_rgba(0,25,60,0.28)]">
@@ -119,7 +124,8 @@ export default function MapScreen() {
             <LevelHouse
               key={level.id}
               level={level}
-              unlocked={Boolean(nivelesAbiertos[index])}
+              // unlocked={Boolean(nivelesAbiertos[index])}
+              unlocked={index < 2 || Boolean(nivelesAbiertos[index])}//provisional
               stars={estrellasPorNivel[index] ?? 0}
               onPlay={() => playLevel(level.id)}
             />

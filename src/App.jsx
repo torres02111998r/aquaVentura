@@ -7,7 +7,7 @@ import IntroScreen from './components/screens/IntroScreen';
 import LevelSummaryScreen from './components/screens/LevelSummaryScreen';
 import MapScreen from './components/screens/MapScreen';
 import PhaserGame from './game/PhaserGame';
-import { useGameStore } from './store/useGameStore';
+  import { useGameStore } from './store/useGameStore';
 
 /** Temporary fallback for screens that are not implemented yet. */
 function UnimplementedScreen({ screen }) {

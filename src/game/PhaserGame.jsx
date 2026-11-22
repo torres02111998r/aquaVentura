@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import Level1Scene from '../game/scenes/Level1Scene';
+import Level2Scene from '../game/scenes/Level2Scene';
 import { EventBus } from '../game/EventBus';
 import { TATO_LINES } from '../game/data/level1Data';
 import { useGameStore } from '../store/useGameStore';
@@ -15,6 +16,7 @@ export default function PhaserGame() {
   const gameRef = useRef(null);
   const patchGame = useGameStore((state) => state.patchGame);
   const setScreen = useGameStore((state) => state.setScreen);
+  const nivelActual = useGameStore((state) => state.nivelActual);
 
   const [message, setMessage] = useState({ speaker: 'Tato', text: TATO_LINES.intro });
 
@@ -36,7 +38,9 @@ export default function PhaserGame() {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
-      scene: [Level1Scene],
+      scene: nivelActual === 2
+    ? [Level2Scene]
+    : [Level1Scene],
     });
 
     gameRef.current = game;
