@@ -34,6 +34,7 @@ export default function PhaserGame() {
   const gameRef = useRef(null);
   const patchGame = useGameStore((state) => state.patchGame);
   const setScreen = useGameStore((state) => state.setScreen);
+  const resetLevel = useGameStore((state) => state.resetLevel);
   const nivelActual = useGameStore((state) => state.nivelActual);
   const estimacionJugador = useGameStore((state) => state.estimacionJugador);
   const setEstimacionJugador = useGameStore(
@@ -45,6 +46,7 @@ export default function PhaserGame() {
     text: TATO_LINES.intro,
   });
   const [l1EstimateOpen, setL1EstimateOpen] = useState(false);
+  const [l1Failed, setL1Failed] = useState(null);
 
   const HOUSE_STATUS = {
     pending: { text: "Pendiente", cls: "bg-red-100 text-red-700" },
@@ -79,6 +81,7 @@ export default function PhaserGame() {
     setL4ShowReport(false);
     setL4Challenges([]);
     setL1EstimateOpen(false);
+    setL1Failed(null);
   }
 
   useEffect(() => {
@@ -120,6 +123,7 @@ export default function PhaserGame() {
         ...(payload.missionText ? { missionText: payload.missionText } : {}),
       });
     const onL1Estimate = () => setL1EstimateOpen(true);
+    const onL1Failed = (payload) => setL1Failed(payload ?? { reason: "kit" });
     const onComplete = () => setScreen("LEVEL_SUMMARY");
     const onExit = () => setScreen("MAP");
     const onL4Summary = (payload) => {
@@ -135,6 +139,7 @@ export default function PhaserGame() {
     EventBus.on("game:exit", onExit);
     EventBus.on("level4:summary", onL4Summary);
     EventBus.on("level1:estimate-request", onL1Estimate);
+    EventBus.on("game:level1-failed", onL1Failed);
 
     return () => {
       EventBus.off("game:message", onMessage);
@@ -143,6 +148,7 @@ export default function PhaserGame() {
       EventBus.off("game:exit", onExit);
       EventBus.off("level4:summary", onL4Summary);
       EventBus.off("level1:estimate-request", onL1Estimate);
+      EventBus.off("game:level1-failed", onL1Failed);
       game.destroy(true);
       gameRef.current = null;
     };
@@ -162,6 +168,19 @@ export default function PhaserGame() {
     setEstimacionJugador(liters);
     setL1EstimateOpen(false);
     EventBus.emit("level1:estimate-submitted", { liters });
+  };
+
+  const handleL1Retry = () => {
+    resetLevel();
+    setL1Failed(null);
+    setL1EstimateOpen(false);
+    setRunId((r) => r + 1); // recreates Phaser with a fresh Level1Scene
+  };
+
+  const handleL1Exit = () => {
+    setL1Failed(null);
+    setL1EstimateOpen(false);
+    setScreen("MAP");
   };
 
   const handleConfirmEstimate = (e) => {
@@ -505,6 +524,46 @@ export default function PhaserGame() {
           initialValue={estimacionJugador}
           onConfirm={handleL1Estimate}
         />
+      )}
+
+      {l1Failed && nivelActual === 1 && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-[#03142b]/75 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="l1-failed-title"
+        >
+          <div className="w-full max-w-sm rounded-2xl border-2 border-av-blue-deep bg-white p-4 text-av-blue-deep shadow-2xl">
+            <p className="m-0 font-display text-xs text-[#0E76A8] uppercase">
+              Misión incompleta · Nivel 1
+            </p>
+            <h2 id="l1-failed-title" className="mt-1 mb-2 font-display text-lg">
+              Se agotaron las herramientas
+            </h2>
+            <p className="m-0 font-body text-xs leading-snug text-av-blue-deep/85">
+              {l1Failed.reason === "detector"
+                ? "No quedan cargas del detector y aún hay fugas sin descubrir."
+                : "No quedan piezas en el kit y aún hay fugas sin reparar."}{" "}
+              Quedan {l1Failed.leaks ?? 0} fugas por resolver.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleL1Exit}
+                className="cursor-pointer rounded-full border-2 border-[#1557B0] px-4 py-2 font-body text-xs font-bold text-[#1557B0] transition-colors hover:bg-av-blue/10 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow"
+              >
+                Volver al mapa
+              </button>
+              <button
+                type="button"
+                onClick={handleL1Retry}
+                className="cursor-pointer rounded-full bg-av-yellow px-4 py-2 font-body text-xs font-bold text-[#1557B0] shadow transition-[filter] hover:brightness-105 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow"
+              >
+                Reintentar nivel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <RepairKitModal />

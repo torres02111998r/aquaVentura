@@ -34,9 +34,9 @@ export const LEVEL1 = {
  */
 export const LAYOUT = {
   world: { width: 960, height: 540 },
-  roof: { x1: 188, x2: 968, ridgeX: 578, ridgeY: 8, eaveY: 116 },
-  house: { x: 210, width: 750 },
-  exterior: { x: 0, width: 210 },
+  roof: { x1: 248, x2: 968, ridgeX: 608, ridgeY: 8, eaveY: 116 },
+  house: { x: 270, width: 690 },
+  exterior: { x: 0, width: 270 },
   streetY: 476,
   upper: { wallTop: 116, floorY: 300, height: 184 },
   lower: { wallTop: 322, floorY: 476, height: 154 },
@@ -51,16 +51,16 @@ export const LAYOUT = {
     steps: 9,
   },
   rooms: {
-    recibidor: { x1: 210, x2: 470, floor: 'ground', label: 'Recibidor' },
+    recibidor: { x1: 270, x2: 470, floor: 'ground', label: 'Recibidor' },
     cocina: { x1: 470, x2: 960, floor: 'ground', label: 'Cocina' },
-    lavamanos: { x1: 210, x2: 480, floor: 'upper', label: 'Lavamanos' },
+    lavamanos: { x1: 270, x2: 480, floor: 'upper', label: 'Lavamanos' },
     inodoro: { x1: 480, x2: 720, floor: 'upper', label: 'Inodoro' },
     ducha: { x1: 720, x2: 960, floor: 'upper', label: 'Ducha' },
   },
   meter: { x: 124, y: 430 },
-  luz: { x: 258, y: 476 },
-  door: { x: 210, y: 392, width: 26, height: 84 },
-  playerStart: { x: 78, y: 476 },
+  luz: { x: 318, y: 476 },
+  door: { x: 270, y: 392, width: 26, height: 84 },
+  playerStart: { x: 70, y: 476 },
 };
 
 /** Furniture images shipped in `public/assets/furniture`. */
@@ -239,6 +239,7 @@ export const TATO_LINES = {
   mateo: 'Mateo abrió la llave otra vez. ¡Vuelve!',
   allRepaired: 'Se detuvo. La aguja por fin se quedó quieta.',
   goMeter: 'Todo reparado. Vuelve al medidor de afuera.',
+  failed: 'Se agotaron las herramientas y aún quedan fugas. Misión incompleta.',
 };
 
 export const LUZ_LINES = {

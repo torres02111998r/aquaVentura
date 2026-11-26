@@ -6,16 +6,20 @@ import {
   LAYOUT,
   FURNITURE,
   FIXTURES,
+  KIT_PIECES,
   TATO_LINES,
   LUZ_LINES,
 } from "../data/level1Data";
+import { useGameStore } from "../../store/useGameStore";
 
 const BODY_FONT = "Inter, system-ui, 'Segoe UI', sans-serif";
 const DISPLAY_FONT = "Ultra, Rockwell, Georgia, serif";
 
 const INTERACT_RANGE = 64;
-const PLAYER_HEIGHT = 118;
+/** Slightly taller than Luz (150 px), so the Inspector reads as an adult. */
+const PLAYER_HEIGHT = 152;
 const WALK_SPEED = 190;
+const STEP_BOB_PX = 2.5;
 
 export default class Level1Scene extends Phaser.Scene {
   constructor() {
@@ -31,10 +35,12 @@ export default class Level1Scene extends Phaser.Scene {
     this.meterOutsideShown = false;
 
     this.enteredHouse = false;
+    this.hasMetLuz = false;
     this.awaitingEstimate = false;
     this.estimateDone = false;
     this.inputLocked = false;
     this.transitioning = false;
+    this.defeatShown = false;
 
     this.detectorOn = false;
     this.detectorCharges = LEVEL1.detectorCharges;
@@ -49,8 +55,11 @@ export default class Level1Scene extends Phaser.Scene {
     this.mateo = null;
 
     this.stepAccum = 0;
+    this.stepPhase = 0;
     this.dripAccum = 0;
     this.dripSoundAccum = 0;
+    this.moveTargetX = null;
+    this.guideStepKey = null;
   }
 
   preload() {
@@ -89,6 +98,7 @@ export default class Level1Scene extends Phaser.Scene {
     this.buildDetectorLayer();
     this.buildPlayer();
     this.buildPrompt();
+    this.buildGuide();
     this.buildInput();
     this.bindEvents();
 
@@ -274,22 +284,23 @@ export default class Level1Scene extends Phaser.Scene {
       g.lineBetween(x + 23, y, x + 23, y + 42);
       g.lineBetween(x, y + 21, x + 46, y + 21);
     };
-    drawWindow(232, 198);
+    drawWindow(LAYOUT.house.x + 22, 198);
     drawWindow(650, 198);
 
     // Door and threshold.
+    const doorX = LAYOUT.door.x;
     g.fillStyle(0x8b5a2b, 1);
-    g.fillRoundedRect(194, LAYOUT.door.y, 32, LAYOUT.door.height, 5);
+    g.fillRoundedRect(doorX - 16, LAYOUT.door.y, 32, LAYOUT.door.height, 5);
     g.fillStyle(0x6f4420, 1);
-    g.fillRoundedRect(200, LAYOUT.door.y + 6, 20, LAYOUT.door.height - 12, 4);
+    g.fillRoundedRect(doorX - 10, LAYOUT.door.y + 6, 20, LAYOUT.door.height - 12, 4);
     g.fillStyle(0xf4ce0f, 1);
-    g.fillCircle(216, LAYOUT.door.y + 44, 3);
+    g.fillCircle(doorX + 6, LAYOUT.door.y + 44, 3);
     g.fillStyle(0xb59a72, 1);
-    g.fillRect(192, lower.floorY - 6, 40, 6);
+    g.fillRect(doorX - 18, lower.floorY - 6, 40, 6);
 
     // Rug in the lobby.
     g.fillStyle(0xc98b6b, 0.35);
-    g.fillEllipse(268, 470, 118, 16);
+    g.fillEllipse(LAYOUT.house.x + 60, 470, 118, 16);
 
     // Room labels.
     const label = (x, y, text) => {
@@ -303,10 +314,10 @@ export default class Level1Scene extends Phaser.Scene {
         .setDepth(3)
         .setAlpha(0.85);
     };
-    label(222, 128, "LAVAMANOS");
+    label(LAYOUT.house.x + 12, 128, "LAVAMANOS");
     label(494, 128, "INODORO");
     label(730, 128, "DUCHA");
-    label(222, 336, "RECIBIDOR");
+    label(LAYOUT.house.x + 12, 336, "RECIBIDOR");
     label(486, 336, "COCINA");
   }
 
@@ -315,10 +326,10 @@ export default class Level1Scene extends Phaser.Scene {
 
     // Fence.
     g.fillStyle(0xe7d6bd, 1);
-    for (let x = 8; x <= 190; x += 22) {
+    for (let x = 8; x <= LAYOUT.exterior.width - 22; x += 22) {
       g.fillRoundedRect(x, 440, 8, 36, 3);
     }
-    g.fillRect(6, 452, 190, 5);
+    g.fillRect(6, 452, LAYOUT.exterior.width - 18, 5);
 
     // Tree.
     g.fillStyle(0x8a5a2b, 1);
@@ -611,7 +622,7 @@ export default class Level1Scene extends Phaser.Scene {
       .setAlpha(0);
 
     const pipes = this.add.graphics().setDepth(49).setAlpha(0);
-    const riserX = 200;
+    const riserX = LAYOUT.house.x + 8;
 
     pipes.lineStyle(2, 0x00e5ff, 0.6);
     FIXTURES.forEach((fixture) => {
@@ -650,9 +661,10 @@ export default class Level1Scene extends Phaser.Scene {
     );
 
     this.player.setOrigin(0.5, 1).setDepth(40);
-    if (useSheet) this.player.setDisplaySize(56, PLAYER_HEIGHT);
-    else if (key === "p_inspector") this.player.setDisplaySize(88, PLAYER_HEIGHT);
-    else this.player.setDisplaySize(66, PLAYER_HEIGHT);
+    // Scale by height only: keeps the sprite sheet frames and the portrait
+    // proportional instead of stretching them into a fixed box.
+    const source = this.textures.get(key).getSourceImage();
+    this.player.setScale(PLAYER_HEIGHT / source.height);
 
     this.player.body.setAllowGravity(false);
   }
@@ -701,6 +713,46 @@ export default class Level1Scene extends Phaser.Scene {
       .setVisible(false);
   }
 
+  buildGuide() {
+    this.guide = this.add.container(0, 0).setDepth(82).setVisible(false);
+
+    const glow = this.add
+      .circle(0, 8, 22, 0xf4ce0f, 0.14)
+      .setStrokeStyle(2, 0xf4ce0f, 0.7);
+    const arrow = this.add
+      .text(0, -8, "▼", {
+        fontFamily: BODY_FONT,
+        fontSize: "22px",
+        fontStyle: "bold",
+        color: "#f4ce0f",
+        stroke: "#0b2a4a",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 1);
+
+    this.guideLabel = this.add
+      .text(0, -30, "", {
+        fontFamily: BODY_FONT,
+        fontSize: "9px",
+        fontStyle: "bold",
+        color: "#f4ce0f",
+        backgroundColor: "#0b2a4a",
+        padding: { x: 5, y: 2 },
+      })
+      .setOrigin(0.5, 1);
+
+    this.guide.add([glow, arrow, this.guideLabel]);
+
+    this.tweens.add({
+      targets: arrow,
+      y: -16,
+      duration: 620,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
   buildInput() {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys({
@@ -714,6 +766,25 @@ export default class Level1Scene extends Phaser.Scene {
 
     this.input.keyboard.once("keydown", () => SoundFX.unlock());
     this.input.once("pointerdown", () => SoundFX.unlock());
+
+    // Click-to-move: only acts on the floor the Inspector is standing on.
+    this.input.on("pointerdown", (pointer) => {
+      if (
+        this.inputLocked ||
+        this.awaitingEstimate ||
+        this.transitioning ||
+        this.completed ||
+        this.defeatShown
+      ) {
+        return;
+      }
+
+      const clickedUpper = pointer.y < (LAYOUT.upper.floorY + LAYOUT.lower.wallTop) / 2;
+      if (clickedUpper !== (this.floor === "upper")) return;
+
+      const minX = this.floor === "upper" ? 240 : 36;
+      this.moveTargetX = Phaser.Math.Clamp(pointer.x, minX, 930);
+    });
   }
 
   bindEvents() {
@@ -773,6 +844,112 @@ export default class Level1Scene extends Phaser.Scene {
     if (this.openTaps() > 0) return "Cierra las llaves abiertas";
     if (this.remainingLeaks() > 0) return "Busca de dónde gotea";
     return "Vuelve al medidor y verifica";
+  }
+
+  /**
+   * Subtle next-step marker. It never blocks input: it only points at the
+   * fixture/stairs that match the current mission state.
+   */
+  guideTarget() {
+    if (
+      this.completed ||
+      this.meterVerified ||
+      this.awaitingEstimate ||
+      this.inputLocked ||
+      this.defeatShown
+    ) {
+      return null;
+    }
+
+    if (!this.hasMetLuz) {
+      return {
+        x: LAYOUT.luz.x,
+        y: LAYOUT.luz.y - PLAYER_HEIGHT - 14,
+        floor: "ground",
+        label: "Saluda a Luz",
+      };
+    }
+
+    const tap = FIXTURES.find((f) => f.hasTap && !this.closedTaps.has(f.id));
+    if (tap) {
+      return { x: tap.x, y: tap.y - 54, floor: tap.floor, label: "Cierra la llave" };
+    }
+
+    const pending = FIXTURES.filter(
+      (f) => f.hasLeak && !this.repaired.has(f.objectId),
+    );
+    if (pending.length > 0) {
+      const hidden = pending.find((f) => !this.identified.has(f.id));
+      const target = hidden ?? pending[0];
+      const needsDetector = Boolean(hidden) && this.detectorCharges > 0;
+      return {
+        x: target.x,
+        y: target.y - 54,
+        floor: target.floor,
+        label: needsDetector ? "Usa el detector" : "Repara la fuga",
+      };
+    }
+
+    return {
+      x: LAYOUT.meter.x,
+      y: LAYOUT.meter.y - 86,
+      floor: "ground",
+      label: "Vuelve al medidor",
+    };
+  }
+
+  updateGuide() {
+    if (!this.guide) return;
+
+    const target = this.guideTarget();
+    if (!target) {
+      this.guide.setVisible(false);
+      return;
+    }
+
+    let { x, y, label } = target;
+    if (target.floor !== this.floor) {
+      const goingUp = target.floor === "upper";
+      x = goingUp ? LAYOUT.stairs.topX : LAYOUT.stairs.baseX;
+      y = (goingUp ? LAYOUT.stairs.topY : LAYOUT.stairs.baseY) - 92;
+      label = goingUp ? "W · Subir" : "S · Bajar";
+    }
+
+    this.guide.setPosition(x, y).setVisible(true);
+    if (this.guideLabel.text !== label) this.guideLabel.setText(label);
+  }
+
+  /**
+   * Resources are gone and the mission cannot be finished. Detector charges
+   * only count as exhausted when unseen leaks remain: the last scan still
+   * reveals every leak, so the player must be allowed to repair afterwards.
+   */
+  checkDefeat() {
+    if (this.defeatShown || this.completed || this.meterVerified) return;
+    if (this.awaitingEstimate || this.inputLocked) return;
+    if (this.remainingLeaks() === 0) return;
+
+    const kit = useGameStore.getState().piezasKit ?? {};
+    const kitEmpty = KIT_PIECES.every((piece) => (kit[piece.id] ?? 0) <= 0);
+    const hiddenLeaks = FIXTURES.filter(
+      (f) => f.hasLeak && !this.repaired.has(f.objectId) && !this.identified.has(f.id),
+    ).length;
+    const detectorExhausted = this.detectorCharges <= 0 && hiddenLeaks > 0;
+
+    if (!kitEmpty && !detectorExhausted) return;
+
+    this.defeatShown = true;
+    this.inputLocked = true;
+    this.moveTargetX = null;
+    this.player.setVelocity(0, 0);
+    this.stopWalk();
+    this.guide?.setVisible(false);
+    this.say("Tato", TATO_LINES.failed);
+
+    EventBus.emit("game:level1-failed", {
+      reason: kitEmpty ? "kit" : "detector",
+      leaks: this.remainingLeaks(),
+    });
   }
 
   emitState() {
@@ -1018,12 +1195,21 @@ export default class Level1Scene extends Phaser.Scene {
   // Narrative triggers
   // ---------------------------------------------------------------------------
 
-  checkEnterHouse() {
-    if (this.enteredHouse) return false;
+  /**
+   * Runs at most once: the Inspector must be inside the house AND close to Luz.
+   * `hasMetLuz` keeps the gate from firing again after the estimate is sent.
+   */
+  checkMeetLuz() {
+    if (this.hasMetLuz || this.floor !== "ground") return false;
     if (this.player.x <= LAYOUT.house.x + 4) return false;
+    if (Math.abs(this.player.x - LAYOUT.luz.x) > INTERACT_RANGE) return false;
 
     this.enteredHouse = true;
+    this.hasMetLuz = true;
     this.awaitingEstimate = true;
+    this.moveTargetX = null;
+    this.player.setVelocityX(0);
+    this.stopWalk();
     this.setKeyboardEnabled(false);
     this.say("Luz", LUZ_LINES.intro);
     this.emitState();
@@ -1320,22 +1506,28 @@ export default class Level1Scene extends Phaser.Scene {
 
   playWalk() {
     if (!this.playerUsesSheet) return;
-    if (this.player.anims.currentAnim?.key !== "inspector-walk") {
-      this.player.play("inspector-walk");
+    if (
+      !this.player.anims.isPlaying ||
+      this.player.anims.currentAnim?.key !== "inspector-walk"
+    ) {
+      this.player.play("inspector-walk", true);
     }
   }
 
   stopWalk() {
     if (!this.playerUsesSheet) return;
     if (this.player.anims.isPlaying) this.player.stop();
+    this.player.setFrame(0);
   }
 
   climbStairs() {
     if (this.transitioning) return;
 
     this.transitioning = true;
+    this.moveTargetX = null;
     this.player.setVelocity(0, 0);
     this.player.setFlipX(false);
+    this.stopWalk();
     SoundFX.playStep();
 
     const steps = this.time.addEvent({
@@ -1364,8 +1556,10 @@ export default class Level1Scene extends Phaser.Scene {
     if (this.transitioning) return;
 
     this.transitioning = true;
+    this.moveTargetX = null;
     this.player.setVelocity(0, 0);
     this.player.setFlipX(true);
+    this.stopWalk();
     SoundFX.playStep();
 
     const steps = this.time.addEvent({
@@ -1396,6 +1590,14 @@ export default class Level1Scene extends Phaser.Scene {
     this.updateMeterNeedle(time);
     this.updateDrips(delta);
     this.updateProximitySound(delta);
+    this.updateGuide();
+
+    this.checkDefeat();
+    if (this.defeatShown) {
+      this.player.setVelocity(0, 0);
+      this.prompt?.setVisible(false);
+      return;
+    }
 
     if (this.transitioning) {
       this.player.setVelocityX(0);
@@ -1416,13 +1618,26 @@ export default class Level1Scene extends Phaser.Scene {
     let moving = false;
 
     if (left && !right) {
+      this.moveTargetX = null;
       this.player.setVelocityX(-WALK_SPEED);
       this.player.setFlipX(true);
       moving = true;
     } else if (right && !left) {
+      this.moveTargetX = null;
       this.player.setVelocityX(WALK_SPEED);
       this.player.setFlipX(false);
       moving = true;
+    } else if (this.moveTargetX !== null) {
+      const dx = this.moveTargetX - this.player.x;
+      if (Math.abs(dx) <= 4) {
+        this.moveTargetX = null;
+        this.player.setVelocityX(0);
+      } else {
+        const dir = Math.sign(dx);
+        this.player.setVelocityX(dir * WALK_SPEED);
+        this.player.setFlipX(dir < 0);
+        moving = true;
+      }
     } else {
       this.player.setVelocityX(0);
     }
@@ -1430,7 +1645,18 @@ export default class Level1Scene extends Phaser.Scene {
     const minX = this.floor === "upper" ? 240 : 36;
     const maxX = 930;
     this.player.x = Phaser.Math.Clamp(this.player.x, minX, maxX);
-    this.player.y = this.floorY();
+    if (this.moveTargetX !== null) {
+      this.moveTargetX = Phaser.Math.Clamp(this.moveTargetX, minX, maxX);
+    }
+
+    // Arcade Physics syncs the body at the start of the frame, so this visual
+    // bob survives until render without fighting the physics step.
+    if (moving && this.player.body.velocity.x !== 0) {
+      this.stepPhase += delta * 0.017;
+      this.player.y = this.floorY() + Math.sin(this.stepPhase) * STEP_BOB_PX;
+    } else {
+      this.player.y = this.floorY();
+    }
 
     if (this.onStairs()) {
       if (
@@ -1460,7 +1686,7 @@ export default class Level1Scene extends Phaser.Scene {
       this.stopWalk();
     }
 
-    if (this.checkEnterHouse()) {
+    if (this.checkMeetLuz()) {
       this.updatePrompt();
       return;
     }
