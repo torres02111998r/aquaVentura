@@ -965,27 +965,63 @@ export default class Level4Scene extends Phaser.Scene {
   /* ---------------------------------------------------------------- visual */
 
   buildInspectorTexture() {
-    if (this.textures.exists("l4_inspector")) return;
-    const g = this.add.graphics();
+    // Un cuadro por pose: reposo, 4 de caminata y salto.
+    // s = separación de piernas, lift = pierna levantada, arm = vaivén de brazos, bob = rebote del cuerpo
+    const poses = {
+      l4_inspector: { s: 0, liftL: 0, liftR: 0, armL: 0, armR: 0, bob: 0 },
+      l4_walk_0: { s: -3, liftL: 0, liftR: 0, armL: -3, armR: 3, bob: 0 },
+      l4_walk_1: { s: 0, liftL: 3, liftR: 0, armL: 0, armR: 0, bob: -1 },
+      l4_walk_2: { s: 3, liftL: 0, liftR: 0, armL: 3, armR: -3, bob: 0 },
+      l4_walk_3: { s: 0, liftL: 0, liftR: 3, armL: 0, armR: 0, bob: -1 },
+      l4_jump: { s: -4, liftL: 3, liftR: 1, armL: -10, armR: -10, bob: 0 },
+    };
 
-    g.fillStyle(0x123c66, 1);
-    g.fillRoundedRect(8, 42, 8, 18, 3);
-    g.fillRoundedRect(20, 42, 8, 18, 3);
+    Object.entries(poses).forEach(([key, p]) => {
+      if (this.textures.exists(key)) return;
+      const g = this.add.graphics();
+      const b = p.bob;
 
-    g.fillStyle(0x2461b1, 1);
-    g.fillRoundedRect(7, 20, 22, 26, 5);
-    g.fillStyle(0x619bf2, 1);
-    g.fillRoundedRect(11, 24, 14, 15, 4);
+      // Brazos (detrás del cuerpo)
+      g.fillStyle(0x2461b1, 1);
+      g.fillRoundedRect(3, 22 + b + p.armL, 5, 14, 2);
+      g.fillRoundedRect(28, 22 + b + p.armR, 5, 14, 2);
+      g.fillStyle(0xf3c9a2, 1);
+      g.fillCircle(5.5, 36 + b + p.armL, 2.5);
+      g.fillCircle(30.5, 36 + b + p.armR, 2.5);
 
-    g.fillStyle(0xf3c9a2, 1);
-    g.fillRoundedRect(11, 8, 14, 14, 5);
-    g.fillStyle(0xf4ce0f, 1);
-    g.fillRoundedRect(8, 2, 20, 10, 5);
-    g.fillStyle(0xd9b40a, 1);
-    g.fillRoundedRect(5, 9, 26, 3, 2);
+      // Piernas
+      g.fillStyle(0x123c66, 1);
+      g.fillRoundedRect(8 + p.s, 42, 8, 18 - p.liftL, 3);
+      g.fillRoundedRect(20 - p.s, 42, 8, 18 - p.liftR, 3);
 
-    g.generateTexture("l4_inspector", 36, 64);
-    g.destroy();
+      // Cuerpo y chaleco
+      g.fillStyle(0x2461b1, 1);
+      g.fillRoundedRect(7, 20 + b, 22, 26, 5);
+      g.fillStyle(0x619bf2, 1);
+      g.fillRoundedRect(11, 24 + b, 14, 15, 4);
+
+      // Cabeza y casco
+      g.fillStyle(0xf3c9a2, 1);
+      g.fillRoundedRect(11, 8 + b, 14, 14, 5);
+      g.fillStyle(0xf4ce0f, 1);
+      g.fillRoundedRect(8, 2 + b, 20, 10, 5);
+      g.fillStyle(0xd9b40a, 1);
+      g.fillRoundedRect(5, 9 + b, 26, 3, 2);
+
+      g.generateTexture(key, 36, 64);
+      g.destroy();
+    });
+
+    if (!this.anims.exists("l4_walk")) {
+      this.anims.create({
+        key: "l4_walk",
+        frames: ["l4_walk_0", "l4_walk_1", "l4_walk_2", "l4_walk_3"].map(
+          (key) => ({ key }),
+        ),
+        frameRate: 10,
+        repeat: -1,
+      });
+    }
   }
 
   buildHudStrip() {
@@ -1592,6 +1628,25 @@ export default class Level4Scene extends Phaser.Scene {
     });
   }
 
+  updatePlayerAnim() {
+    const p = this.player;
+    const onGround = p.body.blocked.down;
+    const moving = Math.abs(p.body.velocity.x) > 10;
+
+    if (!onGround) {
+      if (p.texture.key !== "l4_jump") {
+        p.anims.stop();
+        p.setTexture("l4_jump");
+      }
+    } else if (moving) {
+      p.anims.timeScale = this.decisionCritical ? 1.3 : 1; // en estado crítico, pasos más rápidos
+      p.anims.play("l4_walk", true);
+    } else if (p.texture.key !== "l4_inspector") {
+      p.anims.stop();
+      p.setTexture("l4_inspector");
+    }
+  }
+
   update(time) {
     if (!this.player) return;
 
@@ -1612,6 +1667,7 @@ export default class Level4Scene extends Phaser.Scene {
 
     if (this.awaitingEstimate || this.levelEnded || this.busy) {
       this.player.setVelocityX(0);
+      this.updatePlayerAnim();
       this.prompt.setVisible(false);
       return;
     }
@@ -1643,7 +1699,7 @@ export default class Level4Scene extends Phaser.Scene {
     ) {
       this.startHouseScan();
     }
-
+    this.updatePlayerAnim();
     this.handlePromptAndAction();
   }
 
