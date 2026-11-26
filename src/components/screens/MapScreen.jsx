@@ -75,13 +75,17 @@ export default function MapScreen() {
   const caudalRio = useGameStore((state) => state.caudalRio);
   const setScreen = useGameStore((state) => state.setScreen);
   const setNivelActual = useGameStore((state) => state.setNivelActual);
+  const startLevel = useGameStore((state) => state.startLevel);
   const [notice, setNotice] = useState("");
 
   const playLevel = (id) => {
     setNivelActual(id);
 
+    // Level 1 opens straight into the playable scene. Luz's dialogue and the
+    // estimation modal are triggered inside Level1Scene when she is reached.
     if (id === 1) {
-      setScreen("BRIEFING");
+      startLevel();
+      setScreen("PLAYING");
       return;
     }
 

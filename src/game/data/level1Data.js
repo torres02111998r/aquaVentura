@@ -249,5 +249,9 @@ export const LUZ_LINES = {
   afterMateo: '¡Mateo! ¡Otra vez la llave!',
 };
 
+export const MATEO_LINES = {
+  shower: 'Fui a lavarme las manos y dejé la llave de la ducha abierta.',
+};
+
 export const FUNDACION_AQUAE_DATO =
   'Un grifo que gotea puede perder hasta 15 litros al día (Fundación Aquae, 2021).';

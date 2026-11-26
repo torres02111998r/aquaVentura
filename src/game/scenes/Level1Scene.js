@@ -9,6 +9,7 @@ import {
   KIT_PIECES,
   TATO_LINES,
   LUZ_LINES,
+  MATEO_LINES,
 } from "../data/level1Data";
 import { useGameStore } from "../../store/useGameStore";
 
@@ -17,9 +18,10 @@ const DISPLAY_FONT = "Ultra, Rockwell, Georgia, serif";
 
 const INTERACT_RANGE = 64;
 /** Slightly taller than Luz (150 px), so the Inspector reads as an adult. */
-const PLAYER_HEIGHT = 152;
+const PLAYER_HEIGHT = 139;
 const WALK_SPEED = 190;
-const STEP_BOB_PX = 2.5;
+/** Rhythmic squash while walking; feet stay pinned to the floor line. */
+const STEP_SQUASH = 0.012;
 
 export default class Level1Scene extends Phaser.Scene {
   constructor() {
@@ -79,6 +81,7 @@ export default class Level1Scene extends Phaser.Scene {
     loadIfMissing("p_luz", "/assets/portraits/luz.png");
     loadIfMissing("p_inspector", "/assets/portraits/inspector.png");
     loadIfMissing("p_sheet", "/assets/portraits/inspector_sheet.png");
+    loadIfMissing("mateo", "/assets/portraits/mateo.png");
   }
 
   create() {
@@ -522,7 +525,8 @@ export default class Level1Scene extends Phaser.Scene {
         .image(LAYOUT.luz.x, LAYOUT.luz.y, "p_luz")
         .setOrigin(0.5, 1)
         .setDepth(18);
-      luz.setScale(150 / luz.height);
+      // Slightly shorter than the 152px Inspector; soles sit on the floor.
+      luz.setScale(138 / luz.height);
 
       this.tweens.add({
         targets: luz,
@@ -647,7 +651,7 @@ export default class Level1Scene extends Phaser.Scene {
     const useSheet = this.buildWalkAnimation();
 
     let key = "inspector";
-    if (useSheet) key = "p_sheet";
+    if (useSheet) key = this.playerSheetKey ?? "p_sheet";
     else if (this.textures.exists("p_inspector") && !this.failedLoads.has("p_inspector")) {
       key = "p_inspector";
     }
@@ -660,15 +664,21 @@ export default class Level1Scene extends Phaser.Scene {
       useSheet ? 0 : undefined,
     );
 
+    // Origin at the soles: every frame is repacked to the same foot baseline
+    // and y always matches the floor line exactly.
     this.player.setOrigin(0.5, 1).setDepth(40);
-    // Scale by height only: keeps the sprite sheet frames and the portrait
-    // proportional instead of stretching them into a fixed box.
     const source = this.textures.get(key).getSourceImage();
-    this.player.setScale(PLAYER_HEIGHT / source.height);
+    this.baseScale = PLAYER_HEIGHT / source.height;
+    this.player.setScale(this.baseScale);
 
     this.player.body.setAllowGravity(false);
   }
 
+  /**
+   * The source sheet has 24-66 transparent pixels below the art on each pose.
+   * With origin (0.5, 1) that makes the Inspector float above the floor, so
+   * repack the four poses onto one common foot baseline first.
+   */
   buildWalkAnimation() {
     const key = "p_sheet";
     if (!this.textures.exists(key) || this.failedLoads.has(key)) return false;
@@ -680,21 +690,93 @@ export default class Level1Scene extends Phaser.Scene {
     const frameWidth = Math.floor(source.width / 4);
     if (frameWidth < 16) return false;
 
+    const groundedKey = "p_sheet_grounded";
+    if (!this.textures.exists(groundedKey)) {
+      const measure = document.createElement("canvas");
+      measure.width = source.width;
+      measure.height = source.height;
+      const ctx = measure.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return false;
+      ctx.drawImage(source, 0, 0);
+
+      const poses = [];
+      let cellWidth = 0;
+      let cellHeight = 0;
+
+      for (let i = 0; i < 4; i += 1) {
+        const { data } = ctx.getImageData(
+          i * frameWidth,
+          0,
+          frameWidth,
+          source.height,
+        );
+        let minX = frameWidth;
+        let minY = source.height;
+        let maxX = -1;
+        let maxY = -1;
+
+        for (let y = 0; y < source.height; y += 1) {
+          for (let x = 0; x < frameWidth; x += 1) {
+            if (data[(y * frameWidth + x) * 4 + 3] <= 8) continue;
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+          }
+        }
+        if (maxY < 0) return false;
+
+        const width = maxX - minX + 1;
+        const height = maxY - minY + 1;
+        poses.push({ x: i * frameWidth + minX, y: minY, width, height });
+        cellWidth = Math.max(cellWidth, width);
+        cellHeight = Math.max(cellHeight, height);
+      }
+
+      const grounded = this.textures.createCanvas(
+        groundedKey,
+        cellWidth * 4,
+        cellHeight,
+      );
+      const target = grounded.context;
+      target.clearRect(0, 0, cellWidth * 4, cellHeight);
+      poses.forEach((pose, i) => {
+        target.drawImage(
+          source,
+          pose.x,
+          pose.y,
+          pose.width,
+          pose.height,
+          i * cellWidth + Math.round((cellWidth - pose.width) / 2),
+          cellHeight - pose.height,
+          pose.width,
+          pose.height,
+        );
+      });
+      grounded.refresh();
+    }
+
+    const grounded = this.textures.get(groundedKey);
+    const groundedSource = grounded.getSourceImage();
+    const cellWidth = groundedSource.width / 4;
+    const cellHeight = groundedSource.height;
+
     for (let i = 0; i < 4; i += 1) {
-      if (!texture.has(i)) {
-        texture.add(i, 0, i * frameWidth, 0, frameWidth, source.height);
+      if (!grounded.has(i)) {
+        grounded.add(i, 0, i * cellWidth, 0, cellWidth, cellHeight);
       }
     }
 
     if (!this.anims.exists("inspector-walk")) {
       this.anims.create({
         key: "inspector-walk",
-        frames: [0, 1, 2, 3].map((frame) => ({ key, frame })),
+        frames: [0, 1, 2, 3].map((frame) => ({ key: groundedKey, frame })),
         frameRate: 10,
         repeat: -1,
       });
     }
 
+    this.playerSheetKey = groundedKey;
     return true;
   }
 
@@ -1255,11 +1337,13 @@ export default class Level1Scene extends Phaser.Scene {
     this.say("Luz", LUZ_LINES.afterMateo);
 
     if (this.textures.exists("mateo")) {
-      this.mateo = this.add
+      const mateo = this.add
         .image(1000, LAYOUT.upper.floorY, "mateo")
         .setOrigin(0.5, 1)
-        .setDepth(42)
-        .setDisplaySize(56, 112);
+        .setDepth(42);
+      const source = this.textures.get("mateo").getSourceImage();
+      mateo.setScale(112 / source.height);
+      this.mateo = mateo;
 
       this.tweens.add({
         targets: this.mateo,
@@ -1285,7 +1369,12 @@ export default class Level1Scene extends Phaser.Scene {
       });
     }
 
-    this.time.delayedCall(1200, () => {
+    // React maps speaker "Mateo" to <CharacterAvatar id="mateo" />, which
+    // loads the real /assets/portraits/mateo.png illustration.
+    this.time.delayedCall(900, () => {
+      if (this.sys?.isActive()) this.say("Mateo", MATEO_LINES.shower);
+    });
+    this.time.delayedCall(2000, () => {
       if (this.sys?.isActive()) this.say("Tato", TATO_LINES.mateo);
     });
   }
@@ -1515,6 +1604,9 @@ export default class Level1Scene extends Phaser.Scene {
   }
 
   stopWalk() {
+    if (!this.player) return;
+    const scale = this.baseScale ?? this.player.scaleX;
+    this.player.setScale(scale, scale);
     if (!this.playerUsesSheet) return;
     if (this.player.anims.isPlaying) this.player.stop();
     this.player.setFrame(0);
@@ -1649,13 +1741,18 @@ export default class Level1Scene extends Phaser.Scene {
       this.moveTargetX = Phaser.Math.Clamp(this.moveTargetX, minX, maxX);
     }
 
-    // Arcade Physics syncs the body at the start of the frame, so this visual
-    // bob survives until render without fighting the physics step.
+    // Feet never leave the floor line. The step rhythm is a subtle vertical
+    // squash anchored at the soles instead of a y offset.
+    this.player.y = this.floorY();
+    const scale = this.baseScale ?? this.player.scaleX;
     if (moving && this.player.body.velocity.x !== 0) {
       this.stepPhase += delta * 0.017;
-      this.player.y = this.floorY() + Math.sin(this.stepPhase) * STEP_BOB_PX;
+      this.player.setScale(
+        scale,
+        scale * (1 + Math.sin(this.stepPhase) * STEP_SQUASH),
+      );
     } else {
-      this.player.y = this.floorY();
+      this.player.setScale(scale, scale);
     }
 
     if (this.onStairs()) {
