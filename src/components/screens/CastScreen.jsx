@@ -75,7 +75,7 @@ export default function CastScreen() {
       </header>
 
       <section className="flex min-h-0 flex-1 items-center overflow-y-auto px-[clamp(12px,3vw,32px)] py-3">
-        <div className="mx-auto grid w-full max-w-4xl gap-3 lg:grid-cols-[minmax(0,17rem)_1fr]">
+        <div className="mx-auto my-auto grid w-full max-w-4xl gap-3 lg:grid-cols-[minmax(0,17rem)_1fr]">
           <form
             className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-xl"
             onSubmit={handleSubmit}
@@ -92,7 +92,7 @@ export default function CastScreen() {
                 className="min-w-0 flex-1 rounded-xl bg-av-blue/10 px-3 py-2 font-body text-sm text-av-blue-deep outline-none placeholder:text-av-blue-deep/40 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder="Ej. Wil"
+                placeholder="Ej. perez, wilmer, mario etc"
                 maxLength={18}
                 autoComplete="off"
               />
@@ -133,14 +133,14 @@ export default function CastScreen() {
                   </p>
                 </SpeechBubble>
 
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {CAST.map((person) => {
                     const active = person.id === selectedId;
                     return (
                       <button
                         key={person.id}
                         type="button"
-                        className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl p-2 transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow ${
+                        className={`flex cursor-pointer flex-col items-center gap-1 overflow-hidden rounded-xl p-2 transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow ${
                           active ? 'bg-white/25' : 'bg-white/10 hover:bg-white/20'
                         }`}
                         onClick={() =>
@@ -151,7 +151,7 @@ export default function CastScreen() {
                         <CharacterAvatar
                           id={person.id}
                           name={person.name}
-                          size="sm"
+                          size="3xl"
                           ring={active}
                         />
                         <span className="font-body text-[0.6rem] font-semibold text-white">

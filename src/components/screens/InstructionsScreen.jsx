@@ -1,5 +1,6 @@
-import { Compass, Droplets, Home, Radar, Volume2, Wrench } from 'lucide-react';
+import { Compass, Droplets, Home, Radar, Wrench } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
+import CharacterAvatar from '../common/CharacterAvatar';
 
 const STEPS = [
   {
@@ -47,10 +48,8 @@ export default function InstructionsScreen() {
 
       <section className="flex min-h-0 flex-1 items-center overflow-hidden px-[clamp(16px,4vw,40px)] py-[clamp(12px,2vh,24px)]">
         <div className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl">
-          <div className="flex items-start gap-3 rounded-xl bg-av-blue-deep/10 p-4">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-av-blue-deep text-av-yellow">
-              <Volume2 className="size-4" aria-hidden="true" />
-            </span>
+          <div className="flex items-center gap-4 rounded-xl bg-av-blue-deep/10 p-4">
+            <CharacterAvatar id="tato" name="Tato" size="2xl" />
             <p className="m-0 font-body text-[clamp(0.8rem,1.8vw,0.95rem)] leading-relaxed text-av-blue-deep">
               <span className="font-bold">Tato, tu mentor por radio:</span>{' '}
               ¡Hola Inspector! Tu misión es detener el desperdicio en el barrio

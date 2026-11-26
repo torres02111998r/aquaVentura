@@ -71,7 +71,6 @@ function LevelHouse({ level, unlocked, stars, onPlay }) {
 
 export default function MapScreen() {
   const inspectorName = useGameStore((state) => state.inspectorName);
-  const nivelesAbiertos = useGameStore((state) => state.nivelesAbiertos);
   const estrellasPorNivel = useGameStore((state) => state.estrellasPorNivel);
   const caudalRio = useGameStore((state) => state.caudalRio);
   const setScreen = useGameStore((state) => state.setScreen);
@@ -125,13 +124,12 @@ export default function MapScreen() {
 
       <section className="flex min-h-0 flex-1 flex-col justify-between gap-2 px-[clamp(12px,3vw,32px)] py-3">
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          {/* Provisional: todos los niveles quedan desbloqueados. */}
           {LEVELS.map((level, index) => (
             <LevelHouse
               key={level.id}
               level={level}
-              unlocked={
-                level.id === 4 || index < 2 || Boolean(nivelesAbiertos[index])
-              } // provisional
+              unlocked
               stars={estrellasPorNivel[index] ?? 0}
               onPlay={() => playLevel(level.id)}
             />

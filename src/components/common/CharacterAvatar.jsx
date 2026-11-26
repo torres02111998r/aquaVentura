@@ -12,6 +12,8 @@ const SIZES = {
     md: "h-20 w-16",
     lg: "h-28 w-[5.5rem]",
     xl: "h-36 w-28",
+    "2xl": "size-24",
+    "3xl": "size-32",
   },
   circle: {
     xs: "size-9",
