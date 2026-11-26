@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Home, House, Lock, Star, Waves } from 'lucide-react';
-import { useGameStore } from '../../store/useGameStore';
+import { useState } from "react";
+import { Home, House, Lock, Star, Waves } from "lucide-react";
+import { useGameStore } from "../../store/useGameStore";
 
 const LEVELS = [
-  { id: 1, name: 'La casa Ortiz', tag: 'Exploración' },
-  { id: 2, name: 'El patio', tag: 'Desafío 1' },
-  { id: 3, name: 'El día del corte', tag: 'Desafío 2' },
-  { id: 4, name: 'La cuadra', tag: 'Misión final' },
+  { id: 1, name: "La casa Ortiz", tag: "Exploración" },
+  { id: 2, name: "El patio", tag: "Desafío 1" },
+  { id: 3, name: "El día del corte", tag: "Desafío 2" },
+  { id: 4, name: "La cuadra", tag: "Misión final" },
 ];
 
 function Stars({ count }) {
@@ -17,8 +17,8 @@ function Stars({ count }) {
           key={i}
           className={
             i < count
-              ? 'size-3 fill-av-yellow text-av-yellow'
-              : 'size-3 text-[#5A3B22]/25'
+              ? "size-3 fill-av-yellow text-av-yellow"
+              : "size-3 text-[#5A3B22]/25"
           }
           aria-hidden="true"
         />
@@ -38,14 +38,18 @@ function LevelHouse({ level, unlocked, stars, onPlay }) {
         type="button"
         disabled={!unlocked}
         onClick={onPlay}
-        className={`flex flex-1 flex-col items-center gap-1 rounded-b-xl bg-[#F7EAD6] px-2 py-2 text-center shadow-[0_8px_18px_rgba(0,20,60,0.22)] transition-transform duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow ${unlocked
-            ? 'cursor-pointer hover:-translate-y-0.5'
-            : 'cursor-not-allowed opacity-80'
-          }`}
+        className={`flex flex-1 flex-col items-center gap-1 rounded-b-xl bg-[#F7EAD6] px-2 py-2 text-center shadow-[0_8px_18px_rgba(0,20,60,0.22)] transition-transform duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow ${
+          unlocked
+            ? "cursor-pointer hover:-translate-y-0.5"
+            : "cursor-not-allowed opacity-80"
+        }`}
       >
         <span
-          className={`grid size-8 place-items-center rounded-full ${unlocked ? 'bg-av-blue/20 text-av-blue-deep' : 'bg-[#5A3B22]/10 text-[#5A3B22]/60'
-            }`}
+          className={`grid size-8 place-items-center rounded-full ${
+            unlocked
+              ? "bg-av-blue/20 text-av-blue-deep"
+              : "bg-[#5A3B22]/10 text-[#5A3B22]/60"
+          }`}
         >
           {unlocked ? (
             <House className="size-4" aria-hidden="true" />
@@ -72,30 +76,31 @@ export default function MapScreen() {
   const caudalRio = useGameStore((state) => state.caudalRio);
   const setScreen = useGameStore((state) => state.setScreen);
   const setNivelActual = useGameStore((state) => state.setNivelActual);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState("");
 
   const playLevel = (id) => {
     setNivelActual(id);
 
     if (id === 1) {
-      setScreen('BRIEFING');
+      setScreen("BRIEFING");
       return;
     }
 
-    if (id === 2) {
-      setScreen('PLAYING');
+    if (id === 2 || id === 4) {
+      setScreen("PLAYING");
       return;
     }
 
     setNotice(`El nivel ${id} todavía está en construcción.`);
   };
+
   return (
     <main className="flex h-svh flex-col overflow-hidden bg-[linear-gradient(180deg,#7FB2F5_0%,#619BF2_55%,#5B93EE_100%)]">
       <header className="relative flex shrink-0 items-center justify-center bg-av-blue-deep px-3 py-2.5 shadow-[0_8px_24px_rgba(0,25,60,0.28)]">
         <button
           type="button"
           className="absolute left-3 grid size-9 cursor-pointer place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-av-yellow"
-          onClick={() => setScreen('HOME')}
+          onClick={() => setScreen("HOME")}
           aria-label="Volver al inicio"
           title="Volver al inicio"
         >
@@ -107,7 +112,7 @@ export default function MapScreen() {
             Mapa del barrio
           </h1>
           <p className="m-0 font-body text-[0.6rem] tracking-[0.12em] text-av-cyan uppercase">
-            Los Cámbulos · Inspector {inspectorName || 'invitado'}
+            Los Cámbulos · Inspector {inspectorName || "invitado"}
           </p>
         </div>
       </header>
@@ -124,8 +129,9 @@ export default function MapScreen() {
             <LevelHouse
               key={level.id}
               level={level}
-              // unlocked={Boolean(nivelesAbiertos[index])}
-              unlocked={index < 2 || Boolean(nivelesAbiertos[index])}//provisional
+              unlocked={
+                level.id === 4 || index < 2 || Boolean(nivelesAbiertos[index])
+              } // provisional
               stars={estrellasPorNivel[index] ?? 0}
               onPlay={() => playLevel(level.id)}
             />

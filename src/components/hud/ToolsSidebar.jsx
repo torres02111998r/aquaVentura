@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { PaintBucket, Radar, Radio, Timer, Wrench, X } from 'lucide-react';
-import { EventBus } from '../../game/EventBus';
-import { useGameStore } from '../../store/useGameStore';
+import { useState } from "react";
+import { PaintBucket, Radar, Radio, Timer, Wrench, X } from "lucide-react";
+import { EventBus } from "../../game/EventBus";
+import { useGameStore } from "../../store/useGameStore";
+import useLevel4Hud from "../../hooks/useLevel4Hud"; //Prueba Maicol Nivel 4
 
-const DEFAULT_TATO_MESSAGE = 'Tato: la aguja sigue girando. Algo se escapa.';
+const DEFAULT_TATO_MESSAGE = "Tato: la aguja sigue girando. Algo se escapa.";
 
-function ToolSlot({ icon: Icon, label, count, muted = false, onClick }) {
+function ToolSlot({ icon: Icon, label, count, muted = false, onClick, title }) {
   const content = (
     <>
       <span className="relative grid size-11 place-items-center rounded-xl bg-white/12 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]">
@@ -22,7 +23,7 @@ function ToolSlot({ icon: Icon, label, count, muted = false, onClick }) {
     </>
   );
 
-  const baseClass = `flex w-full flex-col items-center gap-1 ${muted ? 'opacity-70' : ''}`;
+  const baseClass = `flex w-full flex-col items-center gap-1 ${muted ? "opacity-70" : ""}`;
 
   if (onClick) {
     return (
@@ -38,9 +39,12 @@ function ToolSlot({ icon: Icon, label, count, muted = false, onClick }) {
     );
   }
 
-  return <div className={baseClass}>{content}</div>;
+  return (
+    <div className={baseClass} title={title}>
+      {content}
+    </div>
+  );
 }
-
 
 export default function ToolsSidebar() {
   const cargasDetector = useGameStore((state) => state.cargasDetector);
@@ -48,8 +52,19 @@ export default function ToolsSidebar() {
   const tatoMessage = useGameStore((state) => state.tatoMessage);
   const [tatoOpen, setTatoOpen] = useState(false);
 
-  const totalPiezas = Object.values(piezasKit).reduce((total, n) => total + n, 0);
-  const requestDetector = () => EventBus.emit('game:detector-request');
+  const totalPiezas = Object.values(piezasKit).reduce(
+    (total, n) => total + n,
+    0,
+  );
+
+  const level4Hud = useLevel4Hud();
+  const detectorCount = level4Hud ? level4Hud.detectorCharges : cargasDetector;
+  const piezasCount = level4Hud ? level4Hud.kitTotal : totalPiezas;
+  const kitDetalle = level4Hud
+    ? `Empaques: ${level4Hud.kit.empaque} · Flotadores: ${level4Hud.kit.flotador} · Cinta: ${level4Hud.kit.cinta} · Abrazaderas: ${level4Hud.kit.abrazadera}`
+    : undefined;
+
+  const requestDetector = () => EventBus.emit("game:detector-request");
 
   return (
     <aside className="relative flex w-[5.25rem] shrink-0 flex-col items-center gap-3 bg-[#0E76A8] px-2 py-3 text-white shadow-[-6px_0_18px_rgba(0,20,60,0.25)]">
@@ -57,10 +72,25 @@ export default function ToolsSidebar() {
         Herramientas
       </p>
 
-      <ToolSlot icon={Radar} label="Detector" count={cargasDetector} onClick={requestDetector} />
-      <ToolSlot icon={Wrench} label="Kit" count={totalPiezas} />
-      <ToolSlot icon={PaintBucket} label="Cubeta" muted />
-      <ToolSlot icon={Timer} label="Temporizador" muted />
+      <ToolSlot
+        icon={Radar}
+        label="Detector"
+        count={detectorCount}
+        onClick={requestDetector}
+      />
+      <ToolSlot
+        icon={Wrench}
+        label="Kit"
+        count={piezasCount}
+        title={kitDetalle}
+      />
+      {(!level4Hud || level4Hud.activeHouseId === "efrain") && (
+        <ToolSlot icon={PaintBucket} label="Cubeta" muted={!level4Hud} />
+      )}
+      {!level4Hud && <ToolSlot icon={Timer} label="Temporizador" muted />}
+
+      {/* <ToolSlot icon={PaintBucket} label="Cubeta" muted />  */}
+      {/* <ToolSlot icon={Timer} label="Temporizador" muted /> */}
 
       <button
         type="button"

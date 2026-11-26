@@ -1,5 +1,5 @@
-import Phaser from 'phaser';
-import { EventBus } from '../EventBus';
+import Phaser from "phaser";
+import { EventBus } from "../EventBus";
 import {
   LEVEL1,
   ROOMS,
@@ -9,7 +9,7 @@ import {
   TATO_LINES,
   LUZ_LINES,
   LEVEL1_OBJECTS,
-} from '../data/level1Data';
+} from "../data/level1Data";
 
 const INTERACT_RANGE = 78;
 
@@ -26,7 +26,7 @@ const INTERACT_RANGE = 78;
  */
 export default class Level1Scene extends Phaser.Scene {
   constructor() {
-    super('Level1Scene');
+    super("Level1Scene");
   }
 
   create() {
@@ -41,9 +41,10 @@ export default class Level1Scene extends Phaser.Scene {
     this.mateo = null;
     this.repaired = new Set();
     this.tapsOpen = new Map(TAPS.map((tap) => [tap.id, true]));
-    this.meterMax = LEVEL1.totalLeakPerDay + TAPS.length * LEVEL1.openTapMeterBoost;
+    this.meterMax =
+      LEVEL1.totalLeakPerDay + TAPS.length * LEVEL1.openTapMeterBoost;
 
-    this.cameras.main.setBackgroundColor('#0b2a4a');
+    this.cameras.main.setBackgroundColor("#0b2a4a");
     this.physics.world.setBounds(0, 0, LEVEL1.world.width, LEVEL1.world.height);
 
     this.buildTextures();
@@ -57,13 +58,13 @@ export default class Level1Scene extends Phaser.Scene {
     this.bindEvents();
     this.emitState();
 
-    this.time.delayedCall(600, () => this.say('Tato', TATO_LINES.intro));
+    this.time.delayedCall(600, () => this.say("Tato", TATO_LINES.intro));
   }
 
   /* ------------------------------------------------------------------ setup */
 
   buildTextures() {
-    if (!this.textures.exists('inspector')) {
+    if (!this.textures.exists("inspector")) {
       const g = this.add.graphics();
 
       g.fillStyle(0x0b2740, 1);
@@ -95,11 +96,11 @@ export default class Level1Scene extends Phaser.Scene {
       g.fillStyle(0xd9b40a, 1);
       g.fillRoundedRect(5, 9, 26, 3, 2);
 
-      g.generateTexture('inspector', 36, 64);
+      g.generateTexture("inspector", 36, 64);
       g.destroy();
     }
 
-    if (!this.textures.exists('mateo')) {
+    if (!this.textures.exists("mateo")) {
       const g = this.add.graphics();
 
       g.fillStyle(0xf3c9a2, 1);
@@ -117,7 +118,7 @@ export default class Level1Scene extends Phaser.Scene {
       g.fillCircle(11, 8, 1.1);
       g.fillCircle(17, 8, 1.1);
 
-      g.generateTexture('mateo', 28, 44);
+      g.generateTexture("mateo", 28, 44);
       g.destroy();
     }
   }
@@ -134,20 +135,30 @@ export default class Level1Scene extends Phaser.Scene {
     ROOMS.forEach((room) => {
       const centerX = room.x + room.width / 2;
       this.add
-        .rectangle(centerX, wallTop + wallHeight / 2, room.width, wallHeight, room.wall)
+        .rectangle(
+          centerX,
+          wallTop + wallHeight / 2,
+          room.width,
+          wallHeight,
+          room.wall,
+        )
         .setDepth(0);
 
-      if (room.id === 'exterior') {
-        this.add.rectangle(centerX, floorY - 22, room.width, 44, 0xc7d3e0).setDepth(1);
+      if (room.id === "exterior") {
+        this.add
+          .rectangle(centerX, floorY - 22, room.width, 44, 0xc7d3e0)
+          .setDepth(1);
         this.add.rectangle(centerX, 190, room.width, 60, 0x8ec5f7).setDepth(0);
       } else {
-        this.add.rectangle(room.x, wallTop + wallHeight / 2, 5, wallHeight, 0x9fb6cc).setDepth(1);
+        this.add
+          .rectangle(room.x, wallTop + wallHeight / 2, 5, wallHeight, 0x9fb6cc)
+          .setDepth(1);
         this.add
           .text(centerX, 138, room.name.toUpperCase(), {
             fontFamily: '"Inter", sans-serif',
-            fontSize: '11px',
-            fontStyle: 'bold',
-            color: '#5a3b22',
+            fontSize: "11px",
+            fontStyle: "bold",
+            color: "#5a3b22",
           })
           .setOrigin(0.5)
           .setDepth(2);
@@ -234,11 +245,13 @@ export default class Level1Scene extends Phaser.Scene {
       .rectangle(LEVEL1.world.width / 2, 500, LEVEL1.world.width, 60, 0x8a6a46)
       .setDepth(1);
     this.physics.add.existing(this.ground, true);
-    this.add.rectangle(LEVEL1.world.width / 2, 472, LEVEL1.world.width, 5, 0x6f5334).setDepth(2);
+    this.add
+      .rectangle(LEVEL1.world.width / 2, 472, LEVEL1.world.width, 5, 0x6f5334)
+      .setDepth(2);
   }
 
   buildPlayer() {
-    this.player = this.physics.add.sprite(140, 438, 'inspector').setDepth(60);
+    this.player = this.physics.add.sprite(140, 438, "inspector").setDepth(60);
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(20, 60);
     this.player.body.setOffset(8, 4);
@@ -249,14 +262,14 @@ export default class Level1Scene extends Phaser.Scene {
     this.objects = LEVEL1_OBJECTS.map((data) => {
       const entry = { ...data };
 
-      if (data.kind === 'tap') {
+      if (data.kind === "tap") {
         entry.handle = this.add.graphics({ x: data.x, y: data.y }).setDepth(6);
         entry.handle.fillStyle(0x2f6fb5, 1);
         entry.handle.fillRoundedRect(-2, -4, 20, 6, 3);
         entry.handle.fillCircle(18, -1, 4);
       }
 
-      const isTap = data.kind === 'tap';
+      const isTap = data.kind === "tap";
       entry.drop = this.add
         .ellipse(data.x, data.y + 6, isTap ? 3 : 5, isTap ? 12 : 8, 0x38bdf8)
         .setDepth(7);
@@ -269,7 +282,7 @@ export default class Level1Scene extends Phaser.Scene {
         repeat: -1,
       });
 
-      if (data.kind === 'leak') {
+      if (data.kind === "leak") {
         entry.marker = this.add
           .circle(data.x, data.y, 17, 0x00e5ff, 0.28)
           .setStrokeStyle(2, 0x00e5ff)
@@ -280,7 +293,9 @@ export default class Level1Scene extends Phaser.Scene {
       return entry;
     });
 
-    this.leakMarkers = this.objects.filter((obj) => obj.marker).map((obj) => obj.marker);
+    this.leakMarkers = this.objects
+      .filter((obj) => obj.marker)
+      .map((obj) => obj.marker);
   }
 
   buildMeter() {
@@ -309,25 +324,28 @@ export default class Level1Scene extends Phaser.Scene {
 
     this.meterFlash = this.add.circle(x, y, 42, 0x00e5ff, 0).setDepth(55);
 
-    this.needle = this.add.rectangle(x, y, 5, 34, 0xd93b3b).setOrigin(0.5, 1).setDepth(56);
+    this.needle = this.add
+      .rectangle(x, y, 5, 34, 0xd93b3b)
+      .setOrigin(0.5, 1)
+      .setDepth(56);
     this.add.circle(x, y, 5, 0x1557b0).setDepth(57);
 
     this.add
-      .text(x, y - 58, 'MEDIDOR', {
+      .text(x, y - 58, "MEDIDOR", {
         fontFamily: '"Inter", sans-serif',
-        fontSize: '10px',
-        fontStyle: 'bold',
-        color: '#1557b0',
+        fontSize: "10px",
+        fontStyle: "bold",
+        color: "#1557b0",
       })
       .setOrigin(0.5)
       .setDepth(56);
 
     this.meterText = this.add
-      .text(x, y + 56, '80 L/día', {
+      .text(x, y + 56, "80 L/día", {
         fontFamily: '"Inter", sans-serif',
-        fontSize: '13px',
-        fontStyle: 'bold',
-        color: '#0b2740',
+        fontSize: "13px",
+        fontStyle: "bold",
+        color: "#0b2740",
       })
       .setOrigin(0.5)
       .setDepth(56);
@@ -367,11 +385,11 @@ export default class Level1Scene extends Phaser.Scene {
     });
 
     this.prompt = this.add
-      .text(0, 0, 'E  Interactuar', {
+      .text(0, 0, "E  Interactuar", {
         fontFamily: '"Inter", sans-serif',
-        fontSize: '12px',
-        color: '#ffffff',
-        backgroundColor: '#1557b0',
+        fontSize: "12px",
+        color: "#ffffff",
+        backgroundColor: "#1557b0",
         padding: { x: 8, y: 4 },
       })
       .setOrigin(0.5, 1)
@@ -383,12 +401,12 @@ export default class Level1Scene extends Phaser.Scene {
     this.onRepairResult = (payload) => this.applyRepair(payload);
     this.onDetectorRequest = () => this.activateDetector();
 
-    EventBus.on('game:repair-result', this.onRepairResult);
-    EventBus.on('game:detector-request', this.onDetectorRequest);
+    EventBus.on("game:repair-result", this.onRepairResult);
+    EventBus.on("game:detector-request", this.onDetectorRequest);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      EventBus.off('game:repair-result', this.onRepairResult);
-      EventBus.off('game:detector-request', this.onDetectorRequest);
+      EventBus.off("game:repair-result", this.onRepairResult);
+      EventBus.off("game:detector-request", this.onDetectorRequest);
     });
   }
 
@@ -422,7 +440,8 @@ export default class Level1Scene extends Phaser.Scene {
       }
 
       if (Phaser.Input.Keyboard.JustDown(this.keys.e)) this.tryInteract();
-      if (Phaser.Input.Keyboard.JustDown(this.keys.space)) this.activateDetector();
+      if (Phaser.Input.Keyboard.JustDown(this.keys.space))
+        this.activateDetector();
     }
 
     this.updatePrompt();
@@ -439,7 +458,7 @@ export default class Level1Scene extends Phaser.Scene {
     }
 
     this.prompt
-      .setText(near.kind === 'tap' ? 'E  Cerrar llave' : 'E  Revisar')
+      .setText(near.kind === "tap" ? "E  Cerrar llave" : "E  Revisar")
       .setPosition(near.x, near.y - 44)
       .setVisible(true);
   }
@@ -449,8 +468,8 @@ export default class Level1Scene extends Phaser.Scene {
     let bestDx = INTERACT_RANGE;
 
     for (const obj of this.objects) {
-      if (obj.kind === 'tap' && !this.tapsOpen.get(obj.id)) continue;
-      if (obj.kind === 'leak' && this.repaired.has(obj.id)) continue;
+      if (obj.kind === "tap" && !this.tapsOpen.get(obj.id)) continue;
+      if (obj.kind === "leak" && this.repaired.has(obj.id)) continue;
 
       const dx = Math.abs(this.player.x - obj.x);
       if (dx <= bestDx) {
@@ -483,7 +502,7 @@ export default class Level1Scene extends Phaser.Scene {
       targets: this.needle,
       rotation: 0,
       duration: 700,
-      ease: 'Back.easeOut',
+      ease: "Back.easeOut",
     });
     this.tweens.add({
       targets: this.needle,
@@ -503,30 +522,34 @@ export default class Level1Scene extends Phaser.Scene {
     const obj = this.nearObject;
     if (!obj) return;
 
-    if (obj.kind === 'tap') {
+    if (obj.kind === "tap") {
       this.closeTap(obj);
       return;
     }
 
     this.inputLocked = true;
     this.prompt.setVisible(false);
-    EventBus.emit('game:request-repair', {
+    EventBus.emit("game:request-repair", {
       objectId: obj.id,
       label: obj.label,
       kind: obj.kind,
-      hasLeak: obj.kind === 'leak',
+      hasLeak: obj.kind === "leak",
     });
   }
 
   closeTap(obj) {
     this.tapsOpen.set(obj.id, false);
-    this.tweens.add({ targets: obj.handle, rotation: -Math.PI / 2, duration: 220 });
+    this.tweens.add({
+      targets: obj.handle,
+      rotation: -Math.PI / 2,
+      duration: 220,
+    });
     this.stopFlow(obj);
     this.emitState();
 
     if (this.openTaps() === 0) {
-      this.say('Tato', TATO_LINES.tapsClosed);
-      this.time.delayedCall(900, () => this.say('Tato', TATO_LINES.meterStill));
+      this.say("Tato", TATO_LINES.tapsClosed);
+      this.time.delayedCall(900, () => this.say("Tato", TATO_LINES.meterStill));
       this.scheduleMateo();
     }
   }
@@ -543,7 +566,7 @@ export default class Level1Scene extends Phaser.Scene {
       return;
     }
 
-    if (obj.kind !== 'leak' || this.repaired.has(obj.id)) return;
+    if (obj.kind !== "leak" || this.repaired.has(obj.id)) return;
 
     this.repaired.add(obj.id);
     this.stopFlow(obj);
@@ -573,21 +596,21 @@ export default class Level1Scene extends Phaser.Scene {
   showCheck(x, y) {
     const badge = this.add.circle(x, y - 10, 11, 0x1f9d55).setDepth(81);
     const text = this.add
-      .text(x, y - 11, '✓', {
+      .text(x, y - 11, "✓", {
         fontFamily: '"Inter", sans-serif',
-        fontSize: '14px',
-        fontStyle: 'bold',
-        color: '#ffffff',
+        fontSize: "14px",
+        fontStyle: "bold",
+        color: "#ffffff",
       })
       .setOrigin(0.5)
       .setDepth(82);
 
     this.tweens.add({
       targets: [badge, text],
-      y: '-=26',
+      y: "-=26",
       alpha: 0,
       duration: 1400,
-      ease: 'Sine.easeOut',
+      ease: "Sine.easeOut",
       onComplete: () => {
         badge.destroy();
         text.destroy();
@@ -602,21 +625,24 @@ export default class Level1Scene extends Phaser.Scene {
   }
 
   runMateo() {
-    const target = this.objects.find((obj) => obj.id === 'llave_ducha');
+    const target = this.objects.find((obj) => obj.id === "llave_ducha");
     if (!target) return;
 
-    this.mateo = this.add.sprite(1005, 470, 'mateo').setOrigin(0.5, 1).setDepth(59);
+    this.mateo = this.add
+      .sprite(1005, 470, "mateo")
+      .setOrigin(0.5, 1)
+      .setDepth(59);
 
     this.tweens.add({
       targets: this.mateo,
       x: target.x + 34,
       duration: 1900,
-      ease: 'Sine.easeInOut',
+      ease: "Sine.easeInOut",
       onComplete: () => {
         this.mateoEventDone = true;
         this.mateoScheduled = false;
 
-        this.tapsOpen.set('llave_ducha', true);
+        this.tapsOpen.set("llave_ducha", true);
         target.handle.rotation = 0;
         this.tweens.add({
           targets: target.handle,
@@ -627,8 +653,8 @@ export default class Level1Scene extends Phaser.Scene {
         this.resumeFlow(target);
         this.emitState();
 
-        this.say('Luz', LUZ_LINES.afterMateo);
-        this.time.delayedCall(1100, () => this.say('Tato', TATO_LINES.mateo));
+        this.say("Luz", LUZ_LINES.afterMateo);
+        this.time.delayedCall(1100, () => this.say("Tato", TATO_LINES.mateo));
 
         this.time.delayedCall(2400, () => {
           if (!this.mateo) return;
@@ -637,7 +663,7 @@ export default class Level1Scene extends Phaser.Scene {
             x: 1010,
             alpha: 0,
             duration: 1300,
-            ease: 'Sine.easeIn',
+            ease: "Sine.easeIn",
             onComplete: () => {
               this.mateo.destroy();
               this.mateo = null;
@@ -654,14 +680,14 @@ export default class Level1Scene extends Phaser.Scene {
     if (this.detectorOn) return;
 
     if (this.detectorCharges <= 0) {
-      this.say('Tato', TATO_LINES.detectorEmpty);
+      this.say("Tato", TATO_LINES.detectorEmpty);
       return;
     }
 
     this.detectorCharges -= 1;
     this.detectorOn = true;
     this.emitState();
-    this.say('Tato', TATO_LINES.detectorOn);
+    this.say("Tato", TATO_LINES.detectorOn);
 
     this.tweens.add({ targets: this.overlay, fillAlpha: 0.45, duration: 280 });
     this.tweens.add({ targets: this.pipes, alpha: 1, duration: 280 });
@@ -722,7 +748,7 @@ export default class Level1Scene extends Phaser.Scene {
   emitState() {
     const perdidaDiaria = this.leakTotal();
 
-    EventBus.emit('game:state', {
+    EventBus.emit("game:state", {
       perdidaDiaria,
       cargasDetector: this.detectorCharges,
       detectorActive: this.detectorOn,
@@ -744,12 +770,12 @@ export default class Level1Scene extends Phaser.Scene {
     if (!this.mateoEventDone) return;
 
     this.completed = true;
-    this.say('Tato', TATO_LINES.allRepaired);
-    this.time.delayedCall(900, () => this.say('Luz', LUZ_LINES.afterRepair));
-    this.time.delayedCall(2600, () => EventBus.emit('game:complete'));
+    this.say("Tato", TATO_LINES.allRepaired);
+    this.time.delayedCall(900, () => this.say("Luz", LUZ_LINES.afterRepair));
+    this.time.delayedCall(2600, () => EventBus.emit("game:complete"));
   }
 
   say(speaker, text) {
-    EventBus.emit('game:message', { speaker, text });
+    EventBus.emit("game:message", { speaker, text });
   }
 }
