@@ -1,15 +1,18 @@
 /**
  * Level 1 data: "La casa Ortiz" (GDD section 5.2).
  *
- * Layout: a doll-house cross-section seen from the side. The exterior holds the
- * water meter; then four rooms follow: kitchen, washbasin, toilet and shower.
+ * Layout: a two-floor doll-house cross-section seen from the side.
+ *   - Exterior (left): street, facade and the water meter.
+ *   - Ground floor: lobby + kitchen.
+ *   - Upper floor: washbasin, toilet and shower.
+ * A functional staircase with a handrail joins both floors.
  */
 
 export const LEVEL1 = {
   id: 1,
   name: 'La casa Ortiz',
-  missionText: 'Encuentra por qué la aguja no se detiene',
-  world: { width: 960, height: 540, floorY: 470 },
+  missionText: 'Entra a la casa Ortiz y saluda a Luz',
+  world: { width: 960, height: 540, floorY: 476 },
   /** Total leak loss of the level, in L/day. */
   totalLeakPerDay: 80,
   /** Real daily loss the player has to guess in the briefing. */
@@ -25,79 +28,176 @@ export const LEVEL1 = {
   openTapMeterBoost: 8,
 };
 
-/** Rooms are laid out left to right and share the same floor line. */
-export const ROOMS = [
-  { id: 'exterior', name: 'Exterior', x: 0, width: 170, wall: 0x7fb2f5 },
-  { id: 'cocina', name: 'Cocina', x: 170, width: 197, wall: 0xf7ead6 },
-  { id: 'lavamanos', name: 'Lavamanos', x: 367, width: 197, wall: 0xeaf1fb },
-  { id: 'inodoro', name: 'Inodoro', x: 564, width: 197, wall: 0xe6f0f7 },
-  { id: 'ducha', name: 'Ducha', x: 761, width: 199, wall: 0xe8f4fb },
+/**
+ * Geometry of the cross-section. Everything the scene draws is derived from
+ * these numbers so the house stays coherent.
+ */
+export const LAYOUT = {
+  world: { width: 960, height: 540 },
+  roof: { x1: 188, x2: 968, ridgeX: 578, ridgeY: 8, eaveY: 116 },
+  house: { x: 210, width: 750 },
+  exterior: { x: 0, width: 210 },
+  streetY: 476,
+  upper: { wallTop: 116, floorY: 300, height: 184 },
+  lower: { wallTop: 322, floorY: 476, height: 154 },
+  slab: { y: 300, height: 22 },
+  stairs: {
+    x1: 318,
+    x2: 452,
+    baseX: 330,
+    topX: 440,
+    baseY: 476,
+    topY: 300,
+    steps: 9,
+  },
+  rooms: {
+    recibidor: { x1: 210, x2: 470, floor: 'ground', label: 'Recibidor' },
+    cocina: { x1: 470, x2: 960, floor: 'ground', label: 'Cocina' },
+    lavamanos: { x1: 210, x2: 480, floor: 'upper', label: 'Lavamanos' },
+    inodoro: { x1: 480, x2: 720, floor: 'upper', label: 'Inodoro' },
+    ducha: { x1: 720, x2: 960, floor: 'upper', label: 'Ducha' },
+  },
+  meter: { x: 124, y: 430 },
+  luz: { x: 258, y: 476 },
+  door: { x: 210, y: 392, width: 26, height: 84 },
+  playerStart: { x: 78, y: 476 },
+};
+
+/** Furniture images shipped in `public/assets/furniture`. */
+export const FURNITURE = [
+  {
+    key: 'f_cocina',
+    path: '/assets/furniture/cocina.png',
+    room: 'cocina',
+    x: 716,
+    baseY: 476,
+    height: 158,
+  },
+  {
+    key: 'f_lavamanos',
+    path: '/assets/furniture/lavamanos.png',
+    room: 'lavamanos',
+    x: 330,
+    baseY: 300,
+    height: 112,
+  },
+  {
+    key: 'f_inodoro',
+    path: '/assets/furniture/inodoro.png',
+    room: 'inodoro',
+    x: 590,
+    baseY: 300,
+    height: 104,
+  },
+  {
+    key: 'f_ducha',
+    path: '/assets/furniture/ducha.png',
+    room: 'ducha',
+    x: 846,
+    baseY: 300,
+    height: 132,
+  },
 ];
 
 /**
- * Taps left open at the start. Closing them is mission 3 of the level; they do
- * not leak, they just keep the needle moving.
+ * Interactable fixtures. A fixture can have an open tap and/or a hidden leak;
+ * the scene resolves the action order (close the tap first, then repair).
  */
-export const TAPS = [
+export const FIXTURES = [
   {
-    id: 'llave_lavaplatos',
-    label: 'Llave del lavaplatos',
-    room: 'cocina',
-    x: 318,
-    y: 404,
-    open: true,
-  },
-  {
-    id: 'llave_lavamanos',
-    label: 'Llave del lavamanos',
-    room: 'lavamanos',
-    x: 432,
-    y: 392,
-    open: true,
-  },
-  {
-    id: 'llave_ducha',
-    label: 'Llave de la ducha',
-    room: 'ducha',
-    x: 828,
-    y: 348,
-    open: true,
-  },
-];
-
-/** The three real leaks. Only these pulse in detector mode. */
-export const LEAKS = [
-  {
-    id: 'llave_cocina',
+    id: 'cocina',
+    objectId: 'llave_cocina',
+    kind: 'leak',
     label: 'Llave de la cocina',
     room: 'cocina',
-    x: 236,
-    y: 396,
+    floor: 'ground',
+    x: 690,
+    y: 392,
+    floorY: 476,
+    hasTap: true,
+    hasLeak: true,
     perdidaDia: 15,
     piezaCorrecta: 'empaque',
     hint: 'El empaque sella la llave. Eso es lo que gotea.',
+    puddle: { x: 690, y: 470, w: 104, h: 15 },
+    drip: { x: 690, y: 402 },
+    marker: { x: 690, y: 404 },
+  },
+  {
+    id: 'lavamanos',
+    objectId: 'lavamanos_mojado',
+    kind: 'false',
+    label: 'Lavamanos',
+    room: 'lavamanos',
+    floor: 'upper',
+    x: 340,
+    y: 250,
+    floorY: 300,
+    hasTap: true,
+    hasLeak: false,
+    falseAlarm: true,
+    alwaysWet: true,
+    hint: 'Ese lavamanos solo está mojado. Confirma antes de reparar.',
+    puddle: { x: 340, y: 296, w: 86, h: 12 },
+    drip: { x: 340, y: 262 },
   },
   {
     id: 'sanitario',
+    objectId: 'sanitario',
+    kind: 'leak',
     label: 'Sanitario',
     room: 'inodoro',
-    x: 656,
-    y: 414,
+    floor: 'upper',
+    x: 590,
+    y: 252,
+    floorY: 300,
+    hasTap: false,
+    hasLeak: true,
+    silent: true,
     perdidaDia: 40,
     piezaCorrecta: 'flotador',
     hint: 'El flotador es lo que corta el agua del sanitario.',
+    puddle: { x: 590, y: 296, w: 76, h: 12 },
+    drip: { x: 590, y: 266 },
+    marker: { x: 590, y: 258 },
   },
   {
     id: 'ducha',
+    objectId: 'ducha',
+    kind: 'leak',
     label: 'Ducha, unión de la tubería',
     room: 'ducha',
-    x: 902,
-    y: 366,
+    floor: 'upper',
+    x: 846,
+    y: 246,
+    floorY: 300,
+    hasTap: true,
+    hasLeak: true,
     perdidaDia: 25,
     piezaCorrecta: 'cinta',
     hint: 'La unión de la ducha pide cinta sellante.',
+    puddle: { x: 846, y: 296, w: 96, h: 12 },
+    drip: { x: 846, y: 256 },
+    marker: { x: 846, y: 252 },
   },
 ];
+
+/**
+ * Real leaks, kept in the flat shape the repair modal already consumes.
+ * Ids must match the `objectId` sent by the scene.
+ */
+export const LEAKS = FIXTURES.filter((fixture) => fixture.hasLeak).map(
+  (fixture) => ({
+    id: fixture.objectId,
+    label: fixture.label,
+    room: fixture.room,
+    x: fixture.x,
+    y: fixture.y,
+    perdidaDia: fixture.perdidaDia,
+    piezaCorrecta: fixture.piezaCorrecta,
+    hint: fixture.hint,
+  }),
+);
 
 /**
  * False alarm: the washbasin is wet because Mateo just used it, but it does not
@@ -107,8 +207,9 @@ export const FALSE_ALARM = {
   id: 'lavamanos_mojado',
   label: 'Lavamanos',
   room: 'lavamanos',
-  x: 522,
-  y: 418,
+  floor: 'upper',
+  x: 340,
+  y: 250,
   hint: 'Ese lavamanos solo está mojado. Confirma antes de reparar.',
 };
 
@@ -121,29 +222,31 @@ export const KIT_PIECES = [
 ];
 
 export const TATO_LINES = {
-  intro: 'Cierra las tres llaves y mira el medidor.',
+  intro: 'Casa Ortiz, al final de la calle. Entra y saluda a Luz.',
+  estimate: 'Antes de tocar nada, dime cuánta agua crees que se pierde acá.',
+  afterEstimate: 'Cierra las tres llaves y mira el medidor.',
   tapsClosed: 'Bien. Ahora el medidor debería frenar.',
   meterStill: 'Con todo cerrado no debería moverse. Prueba el detector.',
+  meterOutside: 'La aguja sigue girando. Algo se escapa adentro.',
+  meterNeedsTaps: 'Cierra las tres llaves antes de probar el medidor.',
+  needEstimate: 'Primero confirma la estimación con Luz.',
   detectorEmpty: 'No quedan cargas del detector.',
   detectorOn: 'Las fugas laten en turquesa. Solo las reales.',
+  detectorClear: 'No quedan fugas por revelar.',
   wrongPiece: 'Esa pieza no va ahí. Mira otra vez el goteo.',
   noStock: 'No te quedan piezas de esas en el kit.',
+  falseAlarm: 'Ese lavamanos solo está mojado. No hay fuga.',
   mateo: 'Mateo abrió la llave otra vez. ¡Vuelve!',
   allRepaired: 'Se detuvo. La aguja por fin se quedó quieta.',
+  goMeter: 'Todo reparado. Vuelve al medidor de afuera.',
 };
 
 export const LUZ_LINES = {
   intro: '¡Aquí no se desperdicia nada!',
-  afterRepair: '¿Tanto se nos iba?',
+  estimate: '¿Cuánta agua crees que se pierde en un día?',
+  afterRepair: '¿Tanta agua se nos iba?',
   afterMateo: '¡Mateo! ¡Otra vez la llave!',
 };
 
 export const FUNDACION_AQUAE_DATO =
   'Un grifo que gotea puede perder hasta 15 litros al día (Fundación Aquae, 2021).';
-
-/** Flat list used by the scene to build interactables. */
-export const LEVEL1_OBJECTS = [
-  ...TAPS.map((tap) => ({ ...tap, kind: 'tap' })),
-  ...LEAKS.map((leak) => ({ ...leak, kind: 'leak', hasLeak: true })),
-  { ...FALSE_ALARM, kind: 'false', hasLeak: false },
-];

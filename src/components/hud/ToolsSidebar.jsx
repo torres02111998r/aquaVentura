@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PaintBucket, Radar, Radio, Timer, Wrench, X } from "lucide-react";
 import { EventBus } from "../../game/EventBus";
+import CharacterAvatar from "../common/CharacterAvatar";
 import { useGameStore } from "../../store/useGameStore";
 import useLevel4Hud from "../../hooks/useLevel4Hud"; //Prueba Maicol Nivel 4
 
@@ -117,9 +118,12 @@ export default function ToolsSidebar() {
           >
             <X className="size-3.5" aria-hidden="true" />
           </button>
-          <p className="m-0 font-body text-[0.7rem] font-bold tracking-[0.1em] text-[#0E76A8] uppercase">
-            Tato
-          </p>
+          <div className="flex items-center gap-2">
+            <CharacterAvatar id="tato" name="Tato" size="xs" />
+            <p className="m-0 font-body text-[0.7rem] font-bold tracking-[0.1em] text-[#0E76A8] uppercase">
+              Tato
+            </p>
+          </div>
           <p className="mt-1 mb-0 pr-4 font-body text-[0.75rem] leading-snug text-av-blue-deep">
             {tatoMessage || DEFAULT_TATO_MESSAGE}
           </p>

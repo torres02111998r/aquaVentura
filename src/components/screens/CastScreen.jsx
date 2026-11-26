@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
+import CharacterAvatar from '../common/CharacterAvatar';
 import SpeechBubble from './SpeechBubble';
 
 /**
@@ -13,42 +14,36 @@ const CAST = [
     name: 'Tato',
     role: 'Plomero jubilado',
     line: 'Con todo cerrado, la aguja no debería moverse.',
-    avatar: 'bg-av-blue-deep',
   },
   {
     id: 'luz',
     name: 'Luz',
     role: 'Mamá de los Ortiz',
     line: '¡Aquí no se desperdicia nada!',
-    avatar: 'bg-av-blue-button-alt',
   },
   {
     id: 'hernan',
     name: 'Hernán',
     role: 'Papá de los Ortiz',
     line: 'Yo lavo el patio con manguera, es más rápido.',
-    avatar: 'bg-av-blue-button',
   },
   {
     id: 'mateo',
     name: 'Mateo',
     role: 'Hijo, 10 años',
     line: 'Se me olvidó cerrar la llave otra vez.',
-    avatar: 'bg-[#0E76A8]',
   },
   {
     id: 'efrain',
     name: 'Efraín',
     role: 'Vecino de la moto',
     line: 'Vengo a lavar la moto, no tardo nada.',
-    avatar: 'bg-[#1557B0]',
   },
   {
     id: 'valentina',
     name: 'Valentina',
     role: 'Estudiante del apartamento',
     line: 'Mi ducha larga es lo único que me relaja.',
-    avatar: 'bg-[#0B6FA4]',
   },
 ];
 
@@ -121,9 +116,16 @@ export default function CastScreen() {
             {confirmed ? (
               <>
                 <SpeechBubble className="mx-auto w-full max-w-md">
-                  <p className="m-0 font-body text-[0.6rem] font-bold tracking-[0.16em] text-[#0E76A8] uppercase">
-                    {selected ? selected.name : 'Tato'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <CharacterAvatar
+                      id={selected ? selected.id : 'tato'}
+                      name={selected ? selected.name : 'Tato'}
+                      size="xs"
+                    />
+                    <p className="m-0 font-body text-[0.6rem] font-bold tracking-[0.16em] text-[#0E76A8] uppercase">
+                      {selected ? selected.name : 'Tato'}
+                    </p>
+                  </div>
                   <p className="mt-1 mb-0 font-body text-sm leading-snug">
                     {selected
                       ? selected.line
@@ -146,11 +148,12 @@ export default function CastScreen() {
                         }
                         aria-pressed={active}
                       >
-                        <span
-                          className={`grid size-9 place-items-center rounded-full font-display text-sm text-white shadow-[0_4px_10px_rgba(0,20,60,0.3)] ${person.avatar}`}
-                        >
-                          {person.name.charAt(0)}
-                        </span>
+                        <CharacterAvatar
+                          id={person.id}
+                          name={person.name}
+                          size="sm"
+                          ring={active}
+                        />
                         <span className="font-body text-[0.6rem] font-semibold text-white">
                           {person.name}
                         </span>

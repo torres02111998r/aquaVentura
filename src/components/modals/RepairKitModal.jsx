@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Wrench, X } from 'lucide-react';
 import { EventBus } from '../../game/EventBus';
 import { FALSE_ALARM, KIT_PIECES, LEAKS, TATO_LINES } from '../../game/data/level1Data';
+import CharacterAvatar from '../common/CharacterAvatar';
 import { useGameStore } from '../../store/useGameStore';
 
 /**
@@ -24,6 +25,13 @@ export default function RepairKitModal() {
 
     EventBus.on('game:request-repair', onRequest);
     return () => EventBus.off('game:request-repair', onRequest);
+  }, []);
+
+  useEffect(() => {
+    const onForceClose = () => setRequest(null);
+
+    EventBus.on('game:repair-close', onForceClose);
+    return () => EventBus.off('game:repair-close', onForceClose);
   }, []);
 
   useEffect(() => {
@@ -168,13 +176,16 @@ export default function RepairKitModal() {
           })}
         </div>
 
-        <div className="mt-3 min-h-[3.2rem] rounded-xl bg-av-blue/10 px-3 py-2">
-          <p className="m-0 font-body text-[0.58rem] font-bold tracking-[0.14em] text-[#0E76A8] uppercase">
-            Tato
-          </p>
-          <p className="mt-0.5 mb-0 font-body text-[0.72rem] leading-snug text-av-blue-deep">
-            {hint || 'Elige la pieza correcta. Una pieza mal puesta se pierde.'}
-          </p>
+        <div className="mt-3 flex min-h-[3.2rem] items-start gap-2 rounded-xl bg-av-blue/10 px-3 py-2">
+          <CharacterAvatar id="tato" name="Tato" size="xs" />
+          <div className="min-w-0">
+            <p className="m-0 font-body text-[0.58rem] font-bold tracking-[0.14em] text-[#0E76A8] uppercase">
+              Tato
+            </p>
+            <p className="mt-0.5 mb-0 font-body text-[0.72rem] leading-snug text-av-blue-deep">
+              {hint || 'Elige la pieza correcta. Una pieza mal puesta se pierde.'}
+            </p>
+          </div>
         </div>
 
         <button

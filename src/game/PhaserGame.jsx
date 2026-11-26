@@ -5,8 +5,29 @@ import Level2Scene from "../game/scenes/Level2Scene";
 import Level4Scene from "../game/scenes/Level4Scene";
 import { EventBus } from "../game/EventBus";
 import { TATO_LINES } from "../game/data/level1Data";
+import { SoundFX } from "./utils/SoundFX";
 import { useGameStore } from "../store/useGameStore";
 import RepairKitModal from "../components/modals/RepairKitModal";
+import EstimateModal from "../components/modals/EstimateModal";
+import CharacterAvatar from "../components/common/CharacterAvatar";
+
+const SPEAKER_IDS = {
+  inspector: "inspector",
+  tato: "tato",
+  luz: "luz",
+  hernan: "hernan",
+  mateo: "mateo",
+  efrain: "efrain",
+  valentina: "valentina",
+};
+
+const speakerIdFor = (speaker) => {
+  const key = String(speaker ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return SPEAKER_IDS[key] ?? "tato";
+};
 
 export default function PhaserGame() {
   const parentRef = useRef(null);
@@ -14,11 +35,16 @@ export default function PhaserGame() {
   const patchGame = useGameStore((state) => state.patchGame);
   const setScreen = useGameStore((state) => state.setScreen);
   const nivelActual = useGameStore((state) => state.nivelActual);
+  const estimacionJugador = useGameStore((state) => state.estimacionJugador);
+  const setEstimacionJugador = useGameStore(
+    (state) => state.setEstimacionJugador,
+  );
 
   const [message, setMessage] = useState({
     speaker: "Tato",
     text: TATO_LINES.intro,
   });
+  const [l1EstimateOpen, setL1EstimateOpen] = useState(false);
 
   const HOUSE_STATUS = {
     pending: { text: "Pendiente", cls: "bg-red-100 text-red-700" },
@@ -52,6 +78,7 @@ export default function PhaserGame() {
     setL4Comparison(null);
     setL4ShowReport(false);
     setL4Challenges([]);
+    setL1EstimateOpen(false);
   }
 
   useEffect(() => {
@@ -90,7 +117,9 @@ export default function PhaserGame() {
         perdidaDiaria: payload.perdidaDiaria,
         cargasDetector: payload.cargasDetector,
         detectorActive: payload.detectorActive,
+        ...(payload.missionText ? { missionText: payload.missionText } : {}),
       });
+    const onL1Estimate = () => setL1EstimateOpen(true);
     const onComplete = () => setScreen("LEVEL_SUMMARY");
     const onExit = () => setScreen("MAP");
     const onL4Summary = (payload) => {
@@ -105,6 +134,7 @@ export default function PhaserGame() {
     EventBus.on("game:complete", onComplete);
     EventBus.on("game:exit", onExit);
     EventBus.on("level4:summary", onL4Summary);
+    EventBus.on("level1:estimate-request", onL1Estimate);
 
     return () => {
       EventBus.off("game:message", onMessage);
@@ -112,10 +142,27 @@ export default function PhaserGame() {
       EventBus.off("game:complete", onComplete);
       EventBus.off("game:exit", onExit);
       EventBus.off("level4:summary", onL4Summary);
+      EventBus.off("level1:estimate-request", onL1Estimate);
       game.destroy(true);
       gameRef.current = null;
     };
   }, [patchGame, setScreen, nivelActual, runId]); // Si cambia el nivel, se reinicia el juego
+
+  useEffect(() => {
+    const unlock = () => SoundFX.unlock();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  const handleL1Estimate = (liters) => {
+    setEstimacionJugador(liters);
+    setL1EstimateOpen(false);
+    EventBus.emit("level1:estimate-submitted", { liters });
+  };
 
   const handleConfirmEstimate = (e) => {
     e.preventDefault();
@@ -145,12 +192,20 @@ export default function PhaserGame() {
   return (
     <div className="relative flex h-full w-full flex-col bg-[#0b2a4a]">
       <div className="flex shrink-0 items-start gap-2 px-3 pt-2 pb-1">
-        <span className="mt-1 shrink-0 rounded-full bg-av-yellow px-2 py-0.5 font-display text-[0.58rem] tracking-[0.06em] text-[#1557B0] uppercase">
-          {message.speaker}
-        </span>
-        <p className="m-0 min-h-[2.1rem] flex-1 rounded-xl rounded-tl-sm bg-white px-3 py-1.5 font-body text-[0.72rem] leading-snug text-av-blue-deep shadow-[0_6px_16px_rgba(0,20,60,0.28)]">
-          {message.text}
-        </p>
+        <CharacterAvatar
+          id={speakerIdFor(message.speaker)}
+          name={message.speaker}
+          size="sm"
+          className="mt-0.5"
+        />
+        <div className="min-w-0 flex-1">
+          <span className="inline-block rounded-full bg-av-yellow px-2 py-0.5 font-display text-[0.58rem] tracking-[0.06em] text-[#1557B0] uppercase">
+            {message.speaker}
+          </span>
+          <p className="mt-1 mb-0 min-h-[2.1rem] rounded-xl rounded-tl-sm bg-white px-3 py-1.5 font-body text-[0.72rem] leading-snug text-av-blue-deep shadow-[0_6px_16px_rgba(0,20,60,0.28)]">
+            {message.text}
+          </p>
+        </div>
       </div>
 
       <div ref={parentRef} className="min-h-0 flex-1 overflow-hidden" />
@@ -443,6 +498,13 @@ export default function PhaserGame() {
             </div>
           </div>
         </div>
+      )}
+
+      {l1EstimateOpen && nivelActual === 1 && (
+        <EstimateModal
+          initialValue={estimacionJugador}
+          onConfirm={handleL1Estimate}
+        />
       )}
 
       <RepairKitModal />
